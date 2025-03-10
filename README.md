@@ -19,4 +19,10 @@ Port mapping boards are generally done using an .xdc file. Download the Master X
 https://www.tulembedded.com/FPGA/ProductsPYNQ-Z2.html#:~:text=Z2%20Board%20File
 <img width="1128" alt="image" src="https://github.com/user-attachments/assets/faa04d11-3dcd-4269-ad87-9c2fa9acbc70" />
 
-Inside the extracted download you'll see a tcl and xdc file. The video below walks you through making an example project with the Pynq-Z2 board and how to use the tcl and xdc file to interface with it. 
+Inside the extracted download you'll see a tcl and xdc file. The video below walks you through making an example project with the Pynq-Z2 board and how to use the tcl and xdc file to interface with it:
+https://youtu.be/AG15wnyXWaA
+
+Around the 1:36 mark I run the command:
+get_property CONFIG.XXXX [get_bd_cells processing_system7_0]
+
+Go into the tcl file and test running this command on random settings like the CONFIG.PCW_DDR_RAM_BASEADDR. This command should return the value given in the tcl file (for instance if running CONFIG.PCW_DDR_RAM_BASEADDR it should return 0x00100000). If this command returns an value that does not align with the tcl file then something went awry. Finally add the xdc file to constraints. The xdc file is currently how pin mapping will be done.
