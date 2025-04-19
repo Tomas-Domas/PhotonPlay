@@ -1,6 +1,21 @@
 # PhotonPlay
 Galvonometer scanner display for retro games
 
+## Implemented Features
+Galvanometer
+- DAC and amplified bipolar signal circuit is built and tested.
+- Digilent DA2 control signal generation script and workspace file.
+
+FPGA
+- Integrated LUT on BRAM.
+- Parallel to serial converter that uses a handshake protocol to talk to DAC.
+- HDL module for transmitting LUT values to DAC through PMOD interface.
+
+Known Issues / Bugs
+- Op-amps are not properly working as rail-to-rail amplifiers, limiting the range of voltages output to the galvanometer driver circuit.
+- HDL modules not fully parameterized for re-use.
+- LUT generation script not yet able to generate binary files for more compact HDL code.
+
 ## Vivado Instructions:
 We'll be programming the the Pynq-Z2 board using Vivado, follow Dr Stitt's setup guide for Lab0:
 http://www.gstitt.ece.ufl.edu/courses/fall24/eel4720_5721/labs/
