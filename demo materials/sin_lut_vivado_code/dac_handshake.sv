@@ -22,7 +22,7 @@ module dac_handshake(
         WAIT_STATE,
         SEND_STATE
     } state_t;
-     
+	
     state_t next_state, state_r;
      
     always_ff @(posedge clk) begin

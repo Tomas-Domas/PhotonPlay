@@ -24,6 +24,7 @@
 module driver(
     input  clk,
     input  sw0,
+    input  btn,
     output  dac_clk,
     output  chip_sel,
     output  data_out1,
@@ -33,6 +34,7 @@ module driver(
     
     lut_driver DUT      (.clk(clk), 
                          .rst(sw0), 
+                         .btn(btn),
                          .dac_clk(dac_clk), 
                          .chip_sel(chip_sel), 
                          .data_out1(data_out1), 
