@@ -1,11 +1,13 @@
 `timescale 1ns / 1ps
 
 
-module dac_handshake_tb #(
-    param debug=1
+module dac_handshake_headless_tb #(
+    parameter file_name="output.txt",
+    parameter debug=0
 )
 (
     //connect this interface to the internal dut from the main testbench
+    input event clk_disabled,
     input logic clk, //input clock rate; note this is the same as the clock rate you want the dac at
     input logic rst,
     input logic go, //start translation
@@ -20,11 +22,25 @@ module dac_handshake_tb #(
 
 
 int passed, failed;
-mailbox driver_mailbox = new;
 mailbox scoreboard_data_in1_mailbox = new;
 mailbox scoreboard_data_in2_mailbox = new;
 mailbox scoreboard_data_out1_mailbox = new;
 mailbox scoreboard_data_out2_mailbox = new;
+integer file_handle;
+
+initial begin : file_select
+    file_handle = $fopen(file_name, "w");
+
+    if (file_handle == 0) begin
+        $fatal("Failed to open file!");
+    end
+end
+
+initial begin : write_file
+    @clk_disabled;
+    $fclose(file_handle);
+    $display("Wrote to file %s", file_name);
+end
 
 initial begin : start_monitor
     logic [15:0] data_out1_res, data_out2_res;
@@ -68,6 +84,7 @@ initial begin : dac_scoreboard
         scoreboard_data_out1_mailbox.get(data_out1_res);
         scoreboard_data_out2_mailbox.get(data_out2_res);
         if(expected_res1 == data_out1_res[11:0] && expected_res2 == data_out2_res[11:0] && data_out1_res[15:12] == '0 && data_out1_res[15:12] == '0) begin
+            $fwrite(file_handle, "%d, %d\n", expected_res1, expected_res2);
             if(debug) begin
                 $display("DAC Test passed (time %0t) for inputs = [%h, %h]", $time, expected_res1, expected_res2);
             end
@@ -77,6 +94,7 @@ initial begin : dac_scoreboard
         end
     end
 end
+
 
 assert property (@(posedge clk) disable iff (rst) ready == chip_sel); //assert that chip_sel is always the same as ready
 assert property (@(posedge clk) disable iff (rst) (ready && go) |=> (ready == '0)); //ready is false one cycle after go

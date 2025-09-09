@@ -27,64 +27,6 @@ module lut_driver #(
     } state_t;
     state_t state_r;
 
-    // always_ff @(posedge clk) begin
-    //     if(rst) begin
-    //         count <= '0;
-	// 		rom_sel_r <= SQUARE;
-    //         go <= 1'b0; 
-    //         state_r <= START;
-    //     end
-    //     else begin
-    //         case(state_r)
-    //             START: begin
-    //                 go <= 1'b1;
-	// 				rom_sel_r <= SQUARE;
-	// 				state_r <= COUNT_STATIC;
-    //             end
-    //             COUNT_STATIC: begin
-	// 				if (ready) begin
-	// 					rom_sel_r <= SQUARE;
-	// 					count <= count + 1;
-	// 					if(count == 4) begin
-	// 						count <= '0;
-	// 						state_r <= COUNT_DYNAMIC;
-	// 					end
-    //                 end
-    //             end
-	// 			COUNT_DYNAMIC: begin
-	// 				if (ready) begin
-	// 					rom_sel_r <= TRIANGLE;
-	// 					count <= count + 1;
-	// 					if(count == 3) begin
-	// 						count <= '0;
-	// 						state_r <= COUNT_STATIC;
-	// 					end
-    //                 end
-	// 			end
-    //         endcase
-    //     end
-    // end
-    // 	//mux outputs to chose which rom will be drawn
-    // 	always_comb begin
-    // 		case(rom_sel_r)
-    // 			SQUARE: begin
-    // 				data_in1 <= outsquarex;
-    // 				data_in2 <= outsquarey;
-    // 			end
-    // 			
-    // 			TRIANGLE: begin
-    // 				data_in1 <= outtrianglex;
-    // 				data_in2 <= outtriangley;
-    // 			end
-    // 			
-    // 			OCTAGON: begin
-    // 				data_in1 <= outoctagonx;
-    // 				data_in2 <= outoctagony;
-    // 			end
-    // 			
-    // 		endcase
-    // 	end
-
     always_ff @(posedge clk) begin
         if(rst) begin
             count <= '0;
@@ -113,7 +55,6 @@ module lut_driver #(
             endcase
         end
     end
-
     logic[11:0] pos_x, pos_y;
     logic [24:0] speed;
     always_ff @(posedge clk) begin
@@ -186,17 +127,17 @@ module lut_driver #(
 				.addr(count), 
 				.dout(outtriangley));
 				
-	octagonx_rom octagonx
-				(.clk(clk), 
-				.we(1'b0), 
-				.addr(count), 
-				.dout(outoctagonx));
+	// octagonx_rom octagonx
+	// 			(.clk(clk), 
+	// 			.we(1'b0), 
+	// 			.addr(count), 
+	// 			.dout(outoctagonx));
 		
-	octagony_rom octagony
-				(.clk(clk), 
-				.we(1'b0), 
-				.addr(count), 
-				.dout(outoctagony));
+	// octagony_rom octagony
+	// 			(.clk(clk), 
+	// 			.we(1'b0), 
+	// 			.addr(count), 
+	// 			.dout(outoctagony));
 				
     dac_handshake dac_mod(.clk(clk), 
                          .rst(rst), 
