@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 module lut_driver #(
-    localparam LUT_SIZE = 128
+    localparam LUT_SIZE = 4096
 )
 (
     input logic clk,
@@ -17,7 +17,7 @@ module lut_driver #(
     logic [$clog2(LUT_SIZE)-1:0] count1, count2;
     logic go;
 
-    typedef enum logic [1:0] {
+    typedef enum [1:0] {
         WAIT_STATE,
         START
     } state_t;
