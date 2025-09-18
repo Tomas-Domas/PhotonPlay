@@ -55,8 +55,9 @@ module lut_driver #(
             endcase
         end
     end
+
     logic[11:0] pos_x, pos_y;
-    logic [24:0] speed;
+    logic [3:0] speed;
     always_ff @(posedge clk) begin
         if(rst) begin
             pos_x <= '0;
@@ -86,6 +87,24 @@ module lut_driver #(
         end
     end
 
+	logic [3:0] speed_reg;
+	logic [11:0] pos_regx, pos_regy;
+	always_ff @(posedge clk) begin
+		if(rst) begin //clock domain crossing issue, might need to do reset bridge irl
+			speed_reg <= '0;
+			pos_regx <= '0;
+			pos_regy <= '0;
+		end
+		else if (go) begin
+            speed_reg <= speed_reg + 1;
+		    if(speed_reg == 8) begin
+		        speed_reg <= '0;
+			    pos_regx <= pos_x;
+			    pos_regy <= pos_y;
+		    end
+		end
+	end
+
  	//mux outputs to chose which rom will be drawn
  	always_comb begin
  		case(state_r)
@@ -95,8 +114,8 @@ module lut_driver #(
  			end
  			
  			COUNT_DYNAMIC: begin
- 				data_in1 <= outtrianglex + pos_x;
- 				data_in2 <= outtriangley + pos_y;
+ 				data_in1 <= outtrianglex + pos_regx;
+ 				data_in2 <= outtriangley + pos_regy;
  			end
  		endcase
  	end

@@ -3,13 +3,14 @@
 module lut_driver_tb (
 );
 
-localparam NUM_CYCLES = 7000;
+localparam NUM_CYCLES = 50000;
 
 logic clk = 1'b0, rst, dac_clk, chip_sel, data_out1, data_out2, ready;
 logic [3:0] btn;
 lut_driver DUT(.*);
 
 event clk_disabled;
+event button_start;
 
 dac_handshake_headless_tb dac_tb (
                         .clk_disabled(clk_disabled),
@@ -40,9 +41,12 @@ initial begin : initialization
     repeat (5) @(posedge clk);
     @(negedge clk);
     rst <= 1'b0;
+	->button_start;
 end
 
 initial begin : sim_loop
+    @button_start;
+	btn <= 4'b0001;
     #NUM_CYCLES;
     disable gen_clk;
     ->clk_disabled;

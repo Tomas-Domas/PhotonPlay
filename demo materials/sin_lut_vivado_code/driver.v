@@ -24,7 +24,7 @@
 module driver(
     input  clk,
     input  sw0,
-    input  btn,
+    input [3:0] btn,
     output  dac_clk,
     output  chip_sel,
     output  data_out1,
