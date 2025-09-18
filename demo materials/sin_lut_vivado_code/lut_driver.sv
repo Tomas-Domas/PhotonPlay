@@ -55,35 +55,34 @@ module lut_driver #(
             endcase
         end
     end
-
-    logic[11:0] pos_x, pos_y;
-    logic [3:0] speed;
+	
+	
+	logic [11:0] pos_x, pos_y;
+    logic [11:0] speed;
+	logic [11:0] triangle_x_box [0:1] = '{0, 3000};
+	logic [11:0] triangle_y_box [0:1] = '{0, 2598};
     always_ff @(posedge clk) begin
         if(rst) begin
             pos_x <= '0;
             pos_y <= '0;
             speed <= '1;
         end
-        else if(speed == '0) begin
-            if(btn[0]) begin
-                //pos_x <= pos_x == '1 ? '1 : pos_x + 1;
-                pos_x <= pos_x + 1;
-            end
-            if(btn[1]) begin
-                //pos_x <= pos_x == '0 ? '0 : pos_x - 1;
-                pos_x <= pos_x - 1;
-            end
-            if(btn[2]) begin
-                //pos_y <= pos_y == '1 ? '1 : pos_y + 1;
-                pos_y <= pos_y + 1;
-            end
-            if(btn[3]) begin
-                //pos_y <= pos_y == '0 ? '0 : pos_y - 1;
-                pos_y <= pos_y - 1;
-            end
-        end
         else begin
             speed <= speed - 1;
+		    if(speed == '0) begin
+			
+				case(btn[1:0]) //x case
+					2'b01: pos_x <= ((pos_x + triangle_x_box[1]) < 4095) ? pos_x + 1 : pos_x;
+					2'b10: pos_x <= ((pos_x + triangle_x_box[0]) > 0)    ? pos_x - 1 : pos_x;
+					default: pos_x <= pos_x;
+				endcase
+				
+				case(btn[3:2]) //y case
+					2'b01 : pos_y <= ((pos_y + triangle_y_box[1]) < 4095) ? pos_y + 1 : pos_y;
+					2'b10 : pos_y <= ((pos_y + triangle_y_box[0]) > 0)    ? pos_y - 1 : pos_y;
+					default : pos_y <= pos_y;
+				endcase
+			end
         end
     end
 

@@ -3,7 +3,7 @@
 module lut_driver_tb (
 );
 
-localparam NUM_CYCLES = 50000;
+localparam NUM_CYCLES = 1000000;
 
 logic clk = 1'b0, rst, dac_clk, chip_sel, data_out1, data_out2, ready;
 logic [3:0] btn;
@@ -46,7 +46,7 @@ end
 
 initial begin : sim_loop
     @button_start;
-	btn <= 4'b0001;
+	btn <= 4'b0100;
     #NUM_CYCLES;
     disable gen_clk;
     ->clk_disabled;
