@@ -12,7 +12,8 @@ module lut_driver #(
     output logic chip_sel,
     output logic data_out1,
     output logic data_out2,
-    output logic ready
+    output logic ready,
+    output logic laser_en
 );
 
     logic [11:0] data_in1, data_in2;
@@ -106,6 +107,14 @@ module lut_driver #(
 
  	//mux outputs to chose which rom will be drawn
  	always_comb begin
+        // Disable laser before the start of each draw
+        if(count == '0) begin
+            laser_en <= '0;
+        end
+        else begin
+            laser_en <= '1;
+        end 
+
  		case(state_r)
  			COUNT_STATIC: begin
  				data_in1 <= outsquarex;

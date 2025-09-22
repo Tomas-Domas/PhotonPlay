@@ -5,7 +5,7 @@ module lut_driver_tb (
 
 localparam NUM_CYCLES = 1000000;
 
-logic clk = 1'b0, rst, dac_clk, chip_sel, data_out1, data_out2, ready;
+logic clk = 1'b0, rst, dac_clk, chip_sel, data_out1, data_out2, ready, laser_en;
 logic [3:0] btn;
 lut_driver DUT(.*);
 
@@ -23,7 +23,8 @@ dac_handshake_headless_tb dac_tb (
                         .chip_sel(chip_sel),
                         .data_out1(data_out1),
                         .data_out2(data_out2),
-                        .ready(ready));
+                        .ready(ready),
+                        .laser_en(laser_en));
 
 mailbox scoreboard_data_in1_mailbox = new;
 mailbox scoreboard_data_in2_mailbox = new;

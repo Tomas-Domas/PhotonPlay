@@ -29,7 +29,8 @@ module driver(
     output  chip_sel,
     output  data_out1,
     output  data_out2,
-    output led0
+    output led0,
+    output  laser_en
     );
     
     lut_driver DUT      (.clk(clk), 
@@ -39,6 +40,7 @@ module driver(
                          .chip_sel(chip_sel), 
                          .data_out1(data_out1), 
                          .data_out2(data_out2), 
-                         .ready(led0)
+                         .ready(led0),
+                         .laser_en(laser_en)
                          );
 endmodule
