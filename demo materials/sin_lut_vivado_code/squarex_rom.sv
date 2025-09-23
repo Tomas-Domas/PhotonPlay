@@ -18,11 +18,6 @@ module squarex_rom #(
 		rom[2] = 12'd0;
 		rom[3] = 12'd4095;
 		rom[4] = 12'd4095;
-// 		rom[0] = 12'd0;
-// 		rom[1] = 12'd1;
-// 		rom[2] = 12'd2;
-// 		rom[3] = 12'd3;
-// 		rom[4] = 12'd4;
     end
 
     always @(posedge clk) begin

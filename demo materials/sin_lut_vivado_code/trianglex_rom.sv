@@ -1,5 +1,5 @@
 module trianglex_rom #(
-    parameter LUT_SIZE = 4
+    parameter LUT_SIZE = 10
 )
 (
     input clk,
@@ -14,13 +14,15 @@ module trianglex_rom #(
 
     initial begin
 		rom[0] = 12'd0;
-		rom[1] = 12'd3000;
-		rom[2] = 12'd1500;
-		rom[3] = 12'd0;
-// 		rom[0] = 12'd0;
-// 		rom[1] = 12'd1;
-// 		rom[2] = 12'd2;
-// 		rom[3] = 12'd3;
+		rom[1] = 12'd1000;
+		rom[2] = 12'd2000;
+		rom[3] = 12'd3000; //traverse bottom
+		rom[4] = 12'd2500;
+		rom[5] = 12'd2000;
+		rom[6] = 12'd1500; //traverse right side
+		rom[7] = 12'd1000;
+		rom[8] = 12'd500;
+		rom[9] = 12'd0; //traverse left side
     end
 
     always @(posedge clk) begin

@@ -1,5 +1,5 @@
 module triangley_rom #(
-    parameter LUT_SIZE = 4
+    parameter LUT_SIZE = 10
 )
 (
     input clk,
@@ -15,12 +15,14 @@ module triangley_rom #(
     initial begin
 		rom[0] = 12'd0;
 		rom[1] = 12'd0;
-		rom[2] = 12'd2598;
-		rom[3] = 12'd0;
-// 		rom[0] = 12'd0;
-// 		rom[1] = 12'd1;
-// 		rom[2] = 12'd2;
-// 		rom[3] = 12'd3;
+		rom[2] = 12'd0;
+		rom[3] = 12'd0; //traverse bottom
+		rom[4] = 12'd867;
+		rom[5] = 12'd1733;
+		rom[6] = 12'd2598; //traverse right side
+		rom[7] = 12'd1733;
+		rom[8] = 12'd867;
+		rom[9] = 12'd0; //traverse left side
     end
 
     always @(posedge clk) begin

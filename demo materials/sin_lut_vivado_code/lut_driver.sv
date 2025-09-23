@@ -1,8 +1,7 @@
 `timescale 1ns / 1ps
 
 module lut_driver #(
-    localparam LUT_SIZE = 4096,
-	localparam ROM_COUNT = 3
+    localparam LUT_SIZE = 4096
 )
 (
     input logic clk,
@@ -47,7 +46,7 @@ module lut_driver #(
 				COUNT_DYNAMIC: begin
 					if (ready) begin
 						count <= count + 1;
-						if(count == 3) begin
+						if(count == 9) begin
 							count <= '0;
 							state_r <= COUNT_STATIC;
 						end
@@ -59,7 +58,7 @@ module lut_driver #(
 	
 	
 	logic [11:0] pos_x, pos_y;
-    logic [11:0] speed;
+    logic [1:0] speed;
 	logic [11:0] triangle_x_box [0:1] = '{0, 3000};
 	logic [11:0] triangle_y_box [0:1] = '{0, 2598};
     always_ff @(posedge clk) begin
@@ -97,7 +96,7 @@ module lut_driver #(
 		end
 		else if (go) begin
             speed_reg <= speed_reg + 1;
-		    if(speed_reg == 8) begin
+		    if(speed_reg == 14) begin
 		        speed_reg <= '0;
 			    pos_regx <= pos_x;
 			    pos_regy <= pos_y;
@@ -109,10 +108,10 @@ module lut_driver #(
  	always_comb begin
         // Disable laser before the start of each draw
         if(count == '0) begin
-            laser_en <= '0;
+            laser_en <= '1;
         end
         else begin
-            laser_en <= '1;
+            laser_en <= '0;
         end 
 
  		case(state_r)

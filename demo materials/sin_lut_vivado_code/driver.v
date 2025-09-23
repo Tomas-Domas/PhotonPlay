@@ -32,8 +32,22 @@ module driver(
     output led0,
     output  laser_en
     );
+	
+	reg [8:0] count;
+	reg clk_div;
+	always @(posedge clk) begin
+		if(sw0) begin
+			count <= 0;
+			clk_div <= 0;
+		end
+		else begin
+			count <= count + 1;
+			if(&count) clk_div <= ~clk_div;
+		end
+	end
+
     
-    lut_driver DUT      (.clk(clk), 
+    lut_driver DUT      (.clk(clk_div), 
                          .rst(sw0), 
                          .btn(btn),
                          .dac_clk(dac_clk), 

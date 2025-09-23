@@ -23,8 +23,7 @@ dac_handshake_headless_tb dac_tb (
                         .chip_sel(chip_sel),
                         .data_out1(data_out1),
                         .data_out2(data_out2),
-                        .ready(ready),
-                        .laser_en(laser_en));
+                        .ready(ready));
 
 mailbox scoreboard_data_in1_mailbox = new;
 mailbox scoreboard_data_in2_mailbox = new;
