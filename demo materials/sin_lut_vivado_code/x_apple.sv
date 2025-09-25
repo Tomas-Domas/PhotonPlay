@@ -1,5 +1,5 @@
-module trianglex_rom #(
-    parameter LUT_SIZE = 10
+module x_apple #(
+    parameter LUT_SIZE = 5
 )
 (
     input clk,
@@ -13,16 +13,11 @@ module trianglex_rom #(
     reg [11:0] dout;
 
     initial begin
-		rom[0] = 12'd0;
-		rom[1] = 12'd34;
-		rom[2] = 12'd67;
-		rom[3] = 12'd100; //traverse bottom
-		rom[4] = 12'd84;
-		rom[5] = 12'd67;
-		rom[6] = 12'd50; //traverse right side
-		rom[7] = 12'd34;
-		rom[8] = 12'd17;
-		rom[9] = 12'd0; //traverse left side
+		rom[0] = 12'd100;
+		rom[1] = 12'd0;
+		rom[2] = 12'd0;
+		rom[3] = 12'd100;
+		rom[4] = 12'd100;
     end
 
     always @(posedge clk) begin

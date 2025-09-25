@@ -1,7 +1,11 @@
 `timescale 1ns / 1ps
 
 module lut_driver #(
-    localparam LUT_SIZE = 4096
+	localparam MAX_LUT_SIZE = 4096,
+    localparam APPLE_OFFSET_LUT_SIZE = 500,
+	localparam TRIANGLE_LUT_SIZE = 10,
+	localparam BORDER_LUT_SIZE = 5,
+	localparam APPLE_LUT_SIZE = 5
 )
 (
     input logic clk,
@@ -16,39 +20,48 @@ module lut_driver #(
 );
 
     logic [11:0] data_in1, data_in2;
-	logic [11:0] outsquarex, outsquarey, outtrianglex, outtriangley, outoctagonx, outoctagony;
-    logic [$clog2(LUT_SIZE)-1:0] count;
+	logic [11:0] outsquarex, outsquarey, outapplex, outappley, outtrianglex, outtriangley, outapplexoffset, outappleyoffset;
+    logic [$clog2(MAX_LUT_SIZE)-1:0] count;
     logic go;
 
     typedef enum logic [1:0] {
-        START,
-        COUNT_STATIC,
-		COUNT_DYNAMIC
+        COUNT_BORDER,
+		COUNT_TRIANGLE,
+		COUNT_APPLE
     } state_t;
     state_t state_r;
 
     always_ff @(posedge clk) begin
         if(rst) begin
             count <= '0;
-            state_r <= COUNT_STATIC;
+            state_r <= COUNT_BORDER;
         end
         else begin
             case(state_r)
-                COUNT_STATIC: begin
+                COUNT_BORDER: begin
 					if (ready) begin
 						count <= count + 1;
-						if(count == 4) begin
+						if(count == BORDER_LUT_SIZE-1) begin
 							count <= '0;
-						    state_r <= COUNT_DYNAMIC;
+						    state_r <= COUNT_TRIANGLE;
 						end
                     end
                 end
-				COUNT_DYNAMIC: begin
+				COUNT_TRIANGLE: begin
 					if (ready) begin
 						count <= count + 1;
-						if(count == 9) begin
+						if(count == TRIANGLE_LUT_SIZE-1) begin
 							count <= '0;
-							state_r <= COUNT_STATIC;
+							state_r <= COUNT_APPLE;
+						end
+                    end
+				end
+				COUNT_APPLE: begin
+					if (ready) begin
+						count <= count + 1;
+						if(count == APPLE_LUT_SIZE-1) begin
+							count <= '0;
+							state_r <= COUNT_BORDER;
 						end
                     end
 				end
@@ -56,12 +69,11 @@ module lut_driver #(
         end
     end
 	
-	
 	logic [11:0] pos_x, pos_y;
-    logic [1:0] speed;
-	logic [11:0] triangle_x_box [0:1] = '{0, 3000};
-	logic [11:0] triangle_y_box [0:1] = '{0, 2598};
-    always_ff @(posedge clk) begin
+    logic [8:0] speed;
+	logic [11:0] triangle_x_box [0:1] = '{0, 100};
+	logic [11:0] triangle_y_box [0:1] = '{0, 87};
+    always_ff @(posedge clk) begin //moving triangle
         if(rst) begin
             pos_x <= '0;
             pos_y <= '0;
@@ -85,8 +97,49 @@ module lut_driver #(
 			end
         end
     end
+	
+	logic [11:0] apple_x_box [0:1] = '{0, 100};
+	logic [11:0] apple_y_box [0:1] = '{0, 100};
+	logic [$clog2(APPLE_OFFSET_LUT_SIZE)-1:0] apple_count;
+	always_ff @(posedge clk) begin //collision detection for apple
+        if(rst) begin
+			apple_count <= '0;
+        end
+        else begin
+			///////////////////////// SIDE COLLISION ///////////////////////
+			if ((pos_x + triangle_x_box[1] == apple_x_box[0] + outapplexoffset) ||
+				(pos_x + triangle_x_box[0] == apple_x_box[1] + outapplexoffset)) begin //does the triangle touch the x bounds of the apple?
+				
+				if ((triangle_y_box[0] + pos_y <= apple_y_box[1] + outappleyoffset) &&
+					(triangle_y_box[0] + pos_y >= apple_y_box[0] + outappleyoffset)) begin //does the bottom of the triangle fall within apples y bounds?
+					apple_count <= apple_count + 1;
+				end
+				
+				else if ((triangle_y_box[1] + pos_y <= apple_y_box[1] + outappleyoffset) &&
+						 (triangle_y_box[1] + pos_y >= apple_y_box[0] + outappleyoffset)) begin //does the top of the trianlge fall within apples y bounds?
+					apple_count <= apple_count + 1;
+				end
+			end
 
-	logic [3:0] speed_reg;
+			///////////////////////// TOP/BOTTOM COLLISION ///////////////////////
+			if ((pos_y + triangle_y_box[1] == apple_y_box[0] + outappleyoffset) ||
+				(pos_y + triangle_y_box[0] == apple_y_box[1] + outappleyoffset)) begin //does the triangle touch the y bounds of the apple?
+				
+				if ((triangle_x_box[0] + pos_x <= apple_x_box[1] + outapplexoffset) &&
+					(triangle_x_box[0] + pos_x >= apple_x_box[0] + outapplexoffset)) begin //does the left side of the triangle fall within apples y bounds?
+					apple_count <= apple_count + 1;
+				end
+				
+				else if ((triangle_x_box[1] + pos_x <= apple_x_box[1] + outapplexoffset) &&
+						 (triangle_x_box[1] + pos_x >= apple_x_box[0] + outapplexoffset)) begin //does the right side of the trianlge fall within apples y bounds?
+					apple_count <= apple_count + 1;
+				end
+			end
+
+		end
+	end
+
+	logic [$clog2(APPLE_LUT_SIZE+TRIANGLE_LUT_SIZE+BORDER_LUT_SIZE)-1:0] speed_reg;
 	logic [11:0] pos_regx, pos_regy;
 	always_ff @(posedge clk) begin
 		if(rst) begin //clock domain crossing issue, might need to do reset bridge irl
@@ -96,7 +149,7 @@ module lut_driver #(
 		end
 		else if (go) begin
             speed_reg <= speed_reg + 1;
-		    if(speed_reg == 14) begin
+		    if(speed_reg == (APPLE_LUT_SIZE+TRIANGLE_LUT_SIZE+BORDER_LUT_SIZE)-1) begin
 		        speed_reg <= '0;
 			    pos_regx <= pos_x;
 			    pos_regy <= pos_y;
@@ -115,14 +168,19 @@ module lut_driver #(
         end 
 
  		case(state_r)
- 			COUNT_STATIC: begin
+ 			COUNT_BORDER: begin
  				data_in1 <= outsquarex;
  				data_in2 <= outsquarey;
  			end
  			
- 			COUNT_DYNAMIC: begin
+ 			COUNT_TRIANGLE: begin
  				data_in1 <= outtrianglex + pos_regx;
  				data_in2 <= outtriangley + pos_regy;
+ 			end
+			
+			COUNT_APPLE: begin
+ 				data_in1 <= outapplex + outapplexoffset;
+ 				data_in2 <= outappley + outappleyoffset;
  			end
  		endcase
  	end
@@ -130,29 +188,53 @@ module lut_driver #(
 
 
     squarex_rom squarex 
-                (.clk(clk), 
-                .we(1'b0), 
-                .addr(count), 
-                .dout(outsquarex));
+		(.clk(clk), 
+		.we(1'b0), 
+		.addr(count), 
+		.dout(outsquarex));
 
     squarey_rom squarey
-				(.clk(clk), 
-                .we(1'b0), 
-                .addr(count), 
-                .dout(outsquarey));
+		(.clk(clk), 
+		.we(1'b0), 
+		.addr(count), 
+		.dout(outsquarey));
+				
+	x_apple applex
+		(.clk(clk), 
+		.we(1'b0), 
+		.addr(count), 
+		.dout(outapplex));
+			
+	y_apple appley
+		(.clk(clk), 
+		.we(1'b0), 
+		.addr(count), 
+		.dout(outappley));
+		
+	x_apple_offset applexoffset
+		(.clk(clk), 
+		.we(1'b0), 
+		.addr(apple_count), 
+		.dout(outapplexoffset));
+			
+	y_apple_offset appleyoffset
+		(.clk(clk), 
+		.we(1'b0), 
+		.addr(apple_count), 
+		.dout(outappleyoffset));
 				
 	trianglex_rom trianglex
-				(.clk(clk), 
-				.we(1'b0), 
-				.addr(count), 
-				.dout(outtrianglex));
-		
+		(.clk(clk), 
+		.we(1'b0), 
+		.addr(count), 
+		.dout(outtrianglex));
+
 	triangley_rom triangley
-				(.clk(clk), 
-				.we(1'b0), 
-				.addr(count), 
-				.dout(outtriangley));
-				
+		(.clk(clk), 
+		.we(1'b0), 
+		.addr(count), 
+		.dout(outtriangley));
+	
 	// octagonx_rom octagonx
 	// 			(.clk(clk), 
 	// 			.we(1'b0), 

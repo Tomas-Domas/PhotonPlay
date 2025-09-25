@@ -17,11 +17,11 @@ module triangley_rom #(
 		rom[1] = 12'd0;
 		rom[2] = 12'd0;
 		rom[3] = 12'd0; //traverse bottom
-		rom[4] = 12'd867;
-		rom[5] = 12'd1733;
-		rom[6] = 12'd2598; //traverse right side
-		rom[7] = 12'd1733;
-		rom[8] = 12'd867;
+		rom[4] = 12'd29;
+		rom[5] = 12'd58;
+		rom[6] = 12'd87; //traverse right side
+		rom[7] = 12'd58;
+		rom[8] = 12'd29;
 		rom[9] = 12'd0; //traverse left side
     end
 
