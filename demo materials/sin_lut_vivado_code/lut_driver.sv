@@ -5,7 +5,9 @@ module lut_driver #(
     localparam APPLE_OFFSET_LUT_SIZE = 500,
 	localparam TRIANGLE_LUT_SIZE = 10,
 	localparam BORDER_LUT_SIZE = 5,
-	localparam APPLE_LUT_SIZE = 5
+	localparam APPLE_LUT_SIZE = 5,
+	localparam SPEED_DOWN = 2,
+	localparam BUFFER_SIZE = (TRIANGLE_LUT_SIZE + APPLE_LUT_SIZE + BORDER_LUT_SIZE)*SPEED_DOWN
 )
 (
     input logic clk,
@@ -70,33 +72,75 @@ module lut_driver #(
     end
 	
 	logic [11:0] pos_x, pos_y;
-    logic [8:0] speed;
+	logic [$clog2(BUFFER_SIZE)-1:0] speed;
 	logic [11:0] triangle_x_box [0:1] = '{0, 100};
 	logic [11:0] triangle_y_box [0:1] = '{0, 87};
     always_ff @(posedge clk) begin //moving triangle
         if(rst) begin
-            pos_x <= '0;
-            pos_y <= '0;
-            speed <= '1;
+            pos_x <= 4095/2;
+            pos_y <= 4095/2;
+            speed <= '0;
         end
-        else begin
-            speed <= speed - 1;
-		    if(speed == '0) begin
+        else if (go) begin
+            speed <= speed + 1;
+		    if(speed == BUFFER_SIZE-1) begin
+				//defaults
+				speed <= '0;
+				pos_x <= pos_x + x_velocity;
+				pos_y <= pos_y + y_velocity;
 			
-				case(btn[1:0]) //x case
-					2'b01: pos_x <= ((pos_x + triangle_x_box[1]) < 4095) ? pos_x + 1 : pos_x;
-					2'b10: pos_x <= ((pos_x + triangle_x_box[0]) > 0)    ? pos_x - 1 : pos_x;
-					default: pos_x <= pos_x;
-				endcase
-				
-				case(btn[3:2]) //y case
-					2'b01 : pos_y <= ((pos_y + triangle_y_box[1]) < 4095) ? pos_y + 1 : pos_y;
-					2'b10 : pos_y <= ((pos_y + triangle_y_box[0]) > 0)    ? pos_y - 1 : pos_y;
-					default : pos_y <= pos_y;
-				endcase
+				//collision detection for x cases
+				if ((pos_x + x_velocity + triangle_x_box[1]) >= 4095) begin
+						pos_x <= 4095/2;
+						pos_y <= 4095/2;
+				end else if ((pos_x + x_velocity + triangle_x_box[0]) <= 0) begin
+						pos_x <= 4095/2;
+						pos_y <= 4095/2;
+				end
+
+				//collision detection for y cases
+				if ((pos_y + y_velocity + triangle_y_box[1]) >= 4095) begin
+						pos_x <= 4095/2;
+						pos_y <= 4095/2;
+				end else if ((pos_y + y_velocity + triangle_y_box[0]) <= 0) begin
+						pos_x <= 4095/2;
+						pos_y <= 4095/2;
+				end
 			end
         end
     end
+
+	logic [11:0] x_velocity, y_velocity;
+	always_ff @(posedge clk) begin
+		if (rst) begin
+			x_velocity <= BUFFER_SIZE;
+			y_velocity <= '0;
+		end
+		else begin
+			casez(btn[3:0])
+				4'b??01: begin
+					x_velocity <= BUFFER_SIZE;
+					y_velocity <= '0;
+				end
+				4'b??10: begin
+					x_velocity <= -1*BUFFER_SIZE;
+					y_velocity <= '0;
+				end
+				4'b01??: begin
+					x_velocity <='0;
+					y_velocity <= BUFFER_SIZE;
+				end
+				4'b10??: begin
+					x_velocity <='0;
+					y_velocity <= -1*BUFFER_SIZE;
+				end
+				default: begin
+					x_velocity <= x_velocity;
+					y_velocity <= y_velocity;
+				end 
+			endcase
+		end 	
+	end
 	
 	logic [11:0] apple_x_box [0:1] = '{0, 100};
 	logic [11:0] apple_y_box [0:1] = '{0, 100};
@@ -139,24 +183,6 @@ module lut_driver #(
 		end
 	end
 
-	logic [$clog2(APPLE_LUT_SIZE+TRIANGLE_LUT_SIZE+BORDER_LUT_SIZE)-1:0] speed_reg;
-	logic [11:0] pos_regx, pos_regy;
-	always_ff @(posedge clk) begin
-		if(rst) begin //clock domain crossing issue, might need to do reset bridge irl
-			speed_reg <= '0;
-			pos_regx <= '0;
-			pos_regy <= '0;
-		end
-		else if (go) begin
-            speed_reg <= speed_reg + 1;
-		    if(speed_reg == (APPLE_LUT_SIZE+TRIANGLE_LUT_SIZE+BORDER_LUT_SIZE)-1) begin
-		        speed_reg <= '0;
-			    pos_regx <= pos_x;
-			    pos_regy <= pos_y;
-		    end
-		end
-	end
-
  	//mux outputs to chose which rom will be drawn
  	always_comb begin
         // Disable laser before the start of each draw
@@ -174,8 +200,8 @@ module lut_driver #(
  			end
  			
  			COUNT_TRIANGLE: begin
- 				data_in1 <= outtrianglex + pos_regx;
- 				data_in2 <= outtriangley + pos_regy;
+ 				data_in1 <= outtrianglex + pos_x;
+ 				data_in2 <= outtriangley + pos_y;
  			end
 			
 			COUNT_APPLE: begin
