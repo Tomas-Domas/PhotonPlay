@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-module lut_driver_tb (
+module lut_driver_drawing_tb (
 );
 
 localparam NUM_CYCLES = 1000000;

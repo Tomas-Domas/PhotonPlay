@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-module lut_driver_tb ();
+module lut_driver_simple_tb ();
 
 	logic clk=1'b0, rst, dac_clk, chip_sel, data_out1, data_out2, ready;
 
