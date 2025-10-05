@@ -29,11 +29,11 @@ module driver(
     output  chip_sel,
     output  data_out1,
     output  data_out2,
-    output led0,
+    output  led0,
     output  laser_en
     );
 	
-	reg [1:0] count;
+	reg [6:0] count;
 	reg clk_div;
 	always @(posedge clk) begin
 		if(sw0) begin
