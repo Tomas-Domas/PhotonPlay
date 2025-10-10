@@ -7,7 +7,7 @@ module lut_driver #(
 	localparam BORDER_LUT_SIZE = 5,
 	localparam APPLE_LUT_SIZE = 5,
 	localparam SPEED_DOWN = 2,
-	localparam VELOCITY = 64,
+	localparam VELOCITY = 100, //originally 64
 	localparam MAX_NUM_SEGMENTS = 10,
 	localparam TIME_TO_SEND = 16,
 	localparam TRIANGLE_X_BOX = 100,
@@ -121,11 +121,26 @@ module lut_driver #(
 				pos_y[0] <= 4095/2;
 			end
 
+			// IF next pos equals ANY of the current segments minus the final one, then detect as collision and reset the game
+			for (int i = 1; i < MAX_NUM_SEGMENTS-1; i++) begin
+				if ((next_pos_x[11:0] + TRIANGLE_X_BOX >= pos_x[i]) &&
+				(next_pos_x[11:0] <= pos_x[i] + TRIANGLE_X_BOX) &&
+				(next_pos_y[11:0] + TRIANGLE_Y_BOX >= pos_y[i]) &&
+				(next_pos_y[11:0] <= pos_y[i] + TRIANGLE_Y_BOX)) begin
+					//Reset position				
+					pos_x[0] <= 4095/2;
+					pos_y[0] <= 4095/2;
+				end
+			end
+
 			for(int i=1; i<MAX_NUM_SEGMENTS; i++) begin
 				pos_x[i] <= pos_x[i-1];
 				pos_y[i] <= pos_y[i-1];
 			end
         end
+
+
+
     end
 
 	logic signed [12:0] x_velocity, y_velocity;
