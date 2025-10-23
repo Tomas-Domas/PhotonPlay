@@ -2,8 +2,10 @@
 
 module lut_driver_simple_tb ();
 
-	logic clk=1'b0, rst, dac_clk, chip_sel, data_out1, data_out2, ready;
-
+	localparam int CLOCK_CYCLES_RUN = 500;
+	logic clk=1'b0, rst, dac_clk, chip_sel, data_out1, data_out2, ready, laser_en;
+    logic [3:0] btn = 1'b0;
+    
 	initial begin : gen_clk
 		forever #5 clk <= ~clk;
 	end
@@ -20,7 +22,7 @@ module lut_driver_simple_tb ();
 		rst <= 1'b0;
 		@(posedge clk);
 
-        for(int i=0; i<20; i++) begin
+        for(int i=0; i<CLOCK_CYCLES_RUN; i++) begin
     		@(posedge ready);
         end  
         disable gen_clk;
