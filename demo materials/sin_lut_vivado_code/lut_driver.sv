@@ -30,7 +30,7 @@ module lut_driver #(
     logic [11:0] data_in1, data_in2;
 	logic [11:0] outsquarex, outsquarey, outapplex, outappley, outtrianglex, outtriangley, outapplexoffset, outappleyoffset;
     logic [$clog2(MAX_LUT_SIZE)-1:0] count;
-	logic [$clog2(MAX_NUM_SEGMENTS)-1:0] current_segment;
+	logic [$clog2(MAX_NUM_SEGMENTS)-1:0] current_segment, current_length;
     logic go;
 
     typedef enum logic [1:0] {
@@ -122,7 +122,7 @@ module lut_driver #(
 			end
 
 			// IF next pos equals ANY of the current segments minus the final one, then detect as collision and reset the game
-			for (int i = 1; i < MAX_NUM_SEGMENTS-1; i++) begin
+			for (int i = 1; i < current_length; i++) begin
 				if ((next_pos_x[11:0] + TRIANGLE_X_BOX >= pos_x[i]) &&
 				(next_pos_x[11:0] <= pos_x[i] + TRIANGLE_X_BOX) &&
 				(next_pos_y[11:0] + TRIANGLE_Y_BOX >= pos_y[i]) &&
@@ -179,6 +179,7 @@ module lut_driver #(
 	always_ff @(posedge clk) begin //collision detection for apple
         if(rst) begin
 			apple_count <= '0;
+			current_length <= 3;
         end
         else begin
 			if ((next_pos_x[11:0] + TRIANGLE_X_BOX >= outapplexoffset) && 
@@ -186,6 +187,7 @@ module lut_driver #(
 				(next_pos_y[11:0] <= outappleyoffset + APPLE_Y_BOX) &&
 				(next_pos_y[11:0] + TRIANGLE_Y_BOX >= outappleyoffset)) begin 
 					apple_count <= apple_count + 1;
+					current_length  <= current_length + 10;
 			end
 		end
 	end
@@ -206,8 +208,8 @@ module lut_driver #(
  				data_in2 = outsquarey;
  			end
  			COUNT_SEGMENTS: begin
- 				data_in1 = outtrianglex + pos_x[current_segment];
- 				data_in2 = outtriangley + pos_y[current_segment];
+ 				data_in1 = outtrianglex + pos_x[current_segment % current_length];
+ 				data_in2 = outtriangley + pos_y[current_segment % current_length];
  			end
 			COUNT_APPLE: begin
  				data_in1 = outapplex + outapplexoffset;
