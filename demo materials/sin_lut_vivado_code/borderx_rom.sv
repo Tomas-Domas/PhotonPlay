@@ -1,4 +1,4 @@
-module y_apple #(
+module borderx_rom #(
     parameter LUT_SIZE = 5
 )
 (
@@ -13,11 +13,11 @@ module y_apple #(
     reg [11:0] dout;
 
     initial begin
-		rom[0] = 12'd0;
+		rom[0] = 12'd4095;
 		rom[1] = 12'd0;
-		rom[2] = 12'd100;
-		rom[3] = 12'd100;
-		rom[4] = 12'd0;
+		rom[2] = 12'd0;
+		rom[3] = 12'd4095;
+		rom[4] = 12'd4095;
     end
 
     always @(posedge clk) begin

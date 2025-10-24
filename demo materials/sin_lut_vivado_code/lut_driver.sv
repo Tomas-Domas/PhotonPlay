@@ -3,17 +3,14 @@
 module lut_driver #(
 	localparam MAX_LUT_SIZE = 4096,
     localparam APPLE_OFFSET_LUT_SIZE = 500,
-	localparam TRIANGLE_LUT_SIZE = 10,
 	localparam BORDER_LUT_SIZE = 5,
-	localparam APPLE_LUT_SIZE = 5,
-	localparam SPEED_DOWN = 2,
+	localparam SQUARE_LUT_SIZE = 5,
 	localparam VELOCITY = 100, //originally 64
 	localparam MAX_NUM_SEGMENTS = 10,
 	localparam TIME_TO_SEND = 16,
-	localparam TRIANGLE_X_BOX = 100,
-	localparam TRIANGLE_Y_BOX = 87,
-	localparam APPLE_X_BOX = 100,
-	localparam APPLE_Y_BOX = 100
+	localparam SQUARE_X_BOX = 99,
+	localparam SQUARE_Y_BOX = 99,
+	localparam SPEED_DOWN = 3
 )
 (
     input logic clk,
@@ -28,7 +25,7 @@ module lut_driver #(
 );
 
     logic [11:0] data_in1, data_in2;
-	logic [11:0] outsquarex, outsquarey, outapplex, outappley, outtrianglex, outtriangley, outapplexoffset, outappleyoffset;
+	logic [11:0] outborderx, outbordery, outsquarex, outsquarey, outapplexoffset, outappleyoffset;
     logic [$clog2(MAX_LUT_SIZE)-1:0] count;
 	logic [$clog2(MAX_NUM_SEGMENTS)-1:0] current_segment;
     logic go;
@@ -61,7 +58,7 @@ module lut_driver #(
 				COUNT_SEGMENTS: begin
 					if (ready) begin
 						count <= count + 1;
-						if(count == TRIANGLE_LUT_SIZE-1) begin
+						if(count == SQUARE_LUT_SIZE-1) begin
 							count <= '0;
 							if(current_segment == MAX_NUM_SEGMENTS-1) begin //replace this with the last known seg needed to draw
 								current_segment <= '0;
@@ -74,7 +71,7 @@ module lut_driver #(
 				COUNT_APPLE: begin
 					if (ready) begin
 						count <= count + 1;
-						if(count == APPLE_LUT_SIZE-1) begin
+						if(count == SQUARE_LUT_SIZE-1) begin
 							count <= '0;
 							state_r <= COUNT_BORDER;
 						end
@@ -87,6 +84,7 @@ module lut_driver #(
 	//position update logic
 	logic [11:0] pos_x[MAX_NUM_SEGMENTS-1:0];
 	logic [11:0] pos_y[MAX_NUM_SEGMENTS-1:0];
+	logic [$clog2(SPEED_DOWN)-1:0] speed_count;
 	logic signed [12:0] next_pos_x, next_pos_y;
 
 	assign next_pos_x = signed'({1'b0, pos_x[0]}) + x_velocity;
@@ -94,52 +92,57 @@ module lut_driver #(
 
     always_ff @(posedge clk) begin //moving triangle
         if(rst) begin
+			speed_count <= '0;
             pos_x <= '{default: 4095/2};
             pos_y <= '{default: 4095/2};
         end
-        else if(state_r == COUNT_APPLE && count == APPLE_LUT_SIZE-1 && ready) begin
-			pos_x[0] <= next_pos_x[11:0];
-			pos_y[0] <= next_pos_y[11:0]; 
-
-			//collision detection for x cases
-			if (next_pos_x + TRIANGLE_X_BOX > 4095) begin
-				pos_x[0] <= 4095/2;
-				pos_y[0] <= 4095/2;
-			end 
-			else if (next_pos_x < 0) begin
-				pos_x[0] <= 4095/2;
-				pos_y[0] <= 4095/2;
+        else if(state_r == COUNT_APPLE && count == SQUARE_LUT_SIZE-1 && ready) begin
+			if(speed_count < SPEED_DOWN) begin
+				speed_count <= speed_count + 1;
 			end
+			else begin
+				speed_count <= '0;
+				pos_x[0] <= next_pos_x[11:0];
+				pos_y[0] <= next_pos_y[11:0]; 
 
-			//collision detection for y cases
-			if (next_pos_y + TRIANGLE_Y_BOX > 4095) begin
-				pos_x[0] <= 4095/2;
-				pos_y[0] <= 4095/2;
-			end 
-			else if (next_pos_y < 0) begin
-				pos_x[0] <= 4095/2;
-				pos_y[0] <= 4095/2;
-			end
-
-			// IF next pos equals ANY of the current segments minus the final one, then detect as collision and reset the game
-			for (int i = 1; i < MAX_NUM_SEGMENTS-1; i++) begin
-				if ((next_pos_x[11:0] + TRIANGLE_X_BOX >= pos_x[i]) &&
-				(next_pos_x[11:0] <= pos_x[i] + TRIANGLE_X_BOX) &&
-				(next_pos_y[11:0] + TRIANGLE_Y_BOX >= pos_y[i]) &&
-				(next_pos_y[11:0] <= pos_y[i] + TRIANGLE_Y_BOX)) begin
-					//Reset position				
+				//collision detection for x cases
+				if (next_pos_x + SQUARE_X_BOX > 4095) begin
+					pos_x[0] <= 4095/2;
+					pos_y[0] <= 4095/2;
+				end 
+				else if (next_pos_x < 0) begin
 					pos_x[0] <= 4095/2;
 					pos_y[0] <= 4095/2;
 				end
-			end
 
-			for(int i=1; i<MAX_NUM_SEGMENTS; i++) begin
-				pos_x[i] <= pos_x[i-1];
-				pos_y[i] <= pos_y[i-1];
+				//collision detection for y cases
+				if (next_pos_y + SQUARE_Y_BOX > 4095) begin
+					pos_x[0] <= 4095/2;
+					pos_y[0] <= 4095/2;
+				end 
+				else if (next_pos_y < 0) begin
+					pos_x[0] <= 4095/2;
+					pos_y[0] <= 4095/2;
+				end
+
+				// IF next pos equals ANY of the current segments minus the final one, then detect as collision and reset the game
+				for (int i = 1; i < MAX_NUM_SEGMENTS; i++) begin
+					if ((next_pos_x[11:0] + SQUARE_X_BOX >= pos_x[i]) &&
+					(next_pos_x[11:0] <= pos_x[i] + SQUARE_X_BOX) &&
+					(next_pos_y[11:0] + SQUARE_Y_BOX >= pos_y[i]) &&
+					(next_pos_y[11:0] <= pos_y[i] + SQUARE_Y_BOX)) begin
+						//Reset position				
+						pos_x[0] <= 4095/2;
+						pos_y[0] <= 4095/2;
+					end
+				end
+
+				for(int i=1; i<MAX_NUM_SEGMENTS; i++) begin
+					pos_x[i] <= pos_x[i-1];
+					pos_y[i] <= pos_y[i-1];
+				end
 			end
         end
-
-
 
     end
 
@@ -181,10 +184,10 @@ module lut_driver #(
 			apple_count <= '0;
         end
         else begin
-			if ((next_pos_x[11:0] + TRIANGLE_X_BOX >= outapplexoffset) && 
-				(next_pos_x[11:0] <= outapplexoffset + APPLE_X_BOX) &&
-				(next_pos_y[11:0] <= outappleyoffset + APPLE_Y_BOX) &&
-				(next_pos_y[11:0] + TRIANGLE_Y_BOX >= outappleyoffset)) begin 
+			if ((next_pos_x[11:0] + SQUARE_X_BOX >= outapplexoffset) && 
+				(next_pos_x[11:0] <= outapplexoffset + SQUARE_X_BOX) &&
+				(next_pos_y[11:0] <= outappleyoffset + SQUARE_Y_BOX) &&
+				(next_pos_y[11:0] + SQUARE_Y_BOX >= outappleyoffset)) begin 
 					apple_count <= apple_count + 1;
 			end
 		end
@@ -202,44 +205,44 @@ module lut_driver #(
 
  		case(state_r)
  			COUNT_BORDER: begin
- 				data_in1 = outsquarex;
- 				data_in2 = outsquarey;
+ 				data_in1 = outborderx;
+ 				data_in2 = outbordery;
  			end
  			COUNT_SEGMENTS: begin
- 				data_in1 = outtrianglex + pos_x[current_segment];
- 				data_in2 = outtriangley + pos_y[current_segment];
+ 				data_in1 = outsquarex + pos_x[current_segment];
+ 				data_in2 = outsquarey + pos_y[current_segment];
  			end
 			COUNT_APPLE: begin
- 				data_in1 = outapplex + outapplexoffset;
- 				data_in2 = outappley + outappleyoffset;
+ 				data_in1 = outsquarex + outapplexoffset;
+ 				data_in2 = outsquarey + outappleyoffset;
  			end
  		endcase
  	end
     assign go = ready;
 
-    squarex_rom squarex 
+    borderx_rom borderx 
+		(.clk(clk), 
+		.we(1'b0), 
+		.addr(count), 
+		.dout(outborderx));
+
+    bordery_rom bordery
+		(.clk(clk), 
+		.we(1'b0), 
+		.addr(count), 
+		.dout(outbordery));
+				
+	x_square squarex
 		(.clk(clk), 
 		.we(1'b0), 
 		.addr(count), 
 		.dout(outsquarex));
-
-    squarey_rom squarey
+			
+	y_square squarey
 		(.clk(clk), 
 		.we(1'b0), 
 		.addr(count), 
 		.dout(outsquarey));
-				
-	x_apple applex
-		(.clk(clk), 
-		.we(1'b0), 
-		.addr(count), 
-		.dout(outapplex));
-			
-	y_apple appley
-		(.clk(clk), 
-		.we(1'b0), 
-		.addr(count), 
-		.dout(outappley));
 		
 	x_apple_offset applexoffset
 		(.clk(clk), 
@@ -253,29 +256,17 @@ module lut_driver #(
 		.addr(apple_count), 
 		.dout(outappleyoffset));
 				
-	trianglex_rom trianglex
-		(.clk(clk), 
-		.we(1'b0), 
-		.addr(count), 
-		.dout(outtrianglex));
+//	trianglex_rom trianglex
+//		(.clk(clk), 
+//		.we(1'b0), 
+//		.addr(count), 
+//		.dout(outtrianglex));
 
-	triangley_rom triangley
-		(.clk(clk), 
-		.we(1'b0), 
-		.addr(count), 
-		.dout(outtriangley));
-	
-	// octagonx_rom octagonx
-	// 			(.clk(clk), 
-	// 			.we(1'b0), 
-	// 			.addr(count), 
-	// 			.dout(outoctagonx));
-		
-	// octagony_rom octagony
-	// 			(.clk(clk), 
-	// 			.we(1'b0), 
-	// 			.addr(count), 
-	// 			.dout(outoctagony));
+//	triangley_rom triangley
+//		(.clk(clk), 
+//		.we(1'b0), 
+//		.addr(count), 
+//		.dout(outtriangley));
 				
     dac_handshake dac_mod(.clk(clk), 
                          .rst(rst), 

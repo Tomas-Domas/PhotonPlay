@@ -1,4 +1,4 @@
-module squarey_rom #(
+module bordery_rom #(
     parameter LUT_SIZE = 5
 )
 (

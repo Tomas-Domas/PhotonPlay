@@ -47,7 +47,7 @@ end
 
 initial begin : sim_loop
     @button_start;
-	btn <= 4'b0010;
+	btn <= 4'b0100;
     repeat (NUM_CYCLES) @(posedge clk);
     disable gen_clk;
     ->clk_disabled;
@@ -56,7 +56,7 @@ end
 //pos should not change until the next loop iter
 assert property (@(posedge clk) disable iff (rst) 
     (DUT.state_r == DUT.COUNT_BORDER && DUT.count == '0) |=> ($stable(DUT.pos_x[0]) throughout   //should be stable until...
-    (DUT.state_r == DUT.COUNT_APPLE && DUT.count == DUT.APPLE_LUT_SIZE-1 && DUT.ready)[->1]));             //this condition becomes true
+    (DUT.state_r == DUT.COUNT_APPLE && DUT.count == DUT.SQUARE_LUT_SIZE-1 && DUT.ready)[->1]));             //this condition becomes true
 
 //on state transistion, the count should be zero
 assert property (@(posedge clk) disable iff(rst)
