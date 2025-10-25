@@ -33,7 +33,7 @@ module driver(
     output  laser_en
     );
 	
-	reg [6:0] count;
+	reg [4:0] count;
 	reg clk_div;
 	always @(posedge clk) begin
 		if(sw0) begin

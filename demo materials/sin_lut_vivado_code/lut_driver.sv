@@ -5,12 +5,12 @@ module lut_driver #(
     localparam APPLE_OFFSET_LUT_SIZE = 500,
 	localparam BORDER_LUT_SIZE = 5,
 	localparam SQUARE_LUT_SIZE = 5,
-	localparam VELOCITY = 100, //originally 64
-	localparam MAX_NUM_SEGMENTS = 10,
+	localparam VELOCITY = 100,
+	localparam MAX_NUM_SEGMENTS = 64,
 	localparam TIME_TO_SEND = 16,
 	localparam SQUARE_X_BOX = 99,
 	localparam SQUARE_Y_BOX = 99,
-	localparam SPEED_DOWN = 3
+	localparam SPEED_DOWN = 1
 )
 (
     input logic clk,
@@ -27,7 +27,7 @@ module lut_driver #(
     logic [11:0] data_in1, data_in2;
 	logic [11:0] outborderx, outbordery, outsquarex, outsquarey, outapplexoffset, outappleyoffset;
     logic [$clog2(MAX_LUT_SIZE)-1:0] count;
-	logic [$clog2(MAX_NUM_SEGMENTS)-1:0] current_segment;
+	logic [$clog2(MAX_NUM_SEGMENTS)-1:0] current_segment, current_length;
     logic go;
 
     typedef enum logic [1:0] {
@@ -126,16 +126,16 @@ module lut_driver #(
 				end
 
 				// IF next pos equals ANY of the current segments minus the final one, then detect as collision and reset the game
-				for (int i = 1; i < MAX_NUM_SEGMENTS; i++) begin
-					if ((next_pos_x[11:0] + SQUARE_X_BOX >= pos_x[i]) &&
-					(next_pos_x[11:0] <= pos_x[i] + SQUARE_X_BOX) &&
-					(next_pos_y[11:0] + SQUARE_Y_BOX >= pos_y[i]) &&
-					(next_pos_y[11:0] <= pos_y[i] + SQUARE_Y_BOX)) begin
+				//for (int i = 1; i < MAX_NUM_SEGMENTS; i++) begin
+					//if ((next_pos_x[11:0] + SQUARE_X_BOX >= pos_x[i]) &&
+					//(next_pos_x[11:0] <= pos_x[i] + SQUARE_X_BOX) &&
+					//(next_pos_y[11:0] + SQUARE_Y_BOX >= pos_y[i]) &&
+					//(next_pos_y[11:0] <= pos_y[i] + SQUARE_Y_BOX)) begin
 						//Reset position				
-						pos_x[0] <= 4095/2;
-						pos_y[0] <= 4095/2;
-					end
-				end
+						//pos_x[0] <= 4095/2;
+						//pos_y[0] <= 4095/2;
+					//end
+				//end
 
 				for(int i=1; i<MAX_NUM_SEGMENTS; i++) begin
 					pos_x[i] <= pos_x[i-1];
@@ -155,20 +155,28 @@ module lut_driver #(
 		else begin
 			casez(btn[3:0])
 				4'b??01: begin
-					x_velocity <= VELOCITY;
-					y_velocity <= '0;
+					if(x_velocity == 0) begin
+						x_velocity <= VELOCITY;
+						y_velocity <= '0;
+					end
 				end
 				4'b??10: begin
-					x_velocity <= -1*VELOCITY;
-					y_velocity <= '0;
+					if(x_velocity == 0) begin
+						x_velocity <= -1*VELOCITY;
+						y_velocity <= '0;
+					end
 				end
 				4'b01??: begin
-					x_velocity <='0;
-					y_velocity <= VELOCITY;
+					if(y_velocity == 0) begin
+						x_velocity <='0;
+						y_velocity <= VELOCITY;
+					end
 				end
 				4'b10??: begin
-					x_velocity <='0;
-					y_velocity <= -1*VELOCITY;
+					if(y_velocity == 0) begin
+						x_velocity <='0;
+						y_velocity <= -1*VELOCITY;
+					end
 				end
 				default: begin
 					x_velocity <= x_velocity;
@@ -182,6 +190,8 @@ module lut_driver #(
 	always_ff @(posedge clk) begin //collision detection for apple
         if(rst) begin
 			apple_count <= '0;
+			//current_length <= 3;
+			current_length <= MAX_NUM_SEGMENTS;
         end
         else begin
 			if ((next_pos_x[11:0] + SQUARE_X_BOX >= outapplexoffset) && 
@@ -189,6 +199,7 @@ module lut_driver #(
 				(next_pos_y[11:0] <= outappleyoffset + SQUARE_Y_BOX) &&
 				(next_pos_y[11:0] + SQUARE_Y_BOX >= outappleyoffset)) begin 
 					apple_count <= apple_count + 1;
+					//current_length  <= current_length + 3;
 			end
 		end
 	end
@@ -209,8 +220,8 @@ module lut_driver #(
  				data_in2 = outbordery;
  			end
  			COUNT_SEGMENTS: begin
- 				data_in1 = outsquarex + pos_x[current_segment];
- 				data_in2 = outsquarey + pos_y[current_segment];
+ 				data_in1 = outsquarex + pos_x[current_segment % current_length];
+ 				data_in2 = outsquarey + pos_y[current_segment % current_length];
  			end
 			COUNT_APPLE: begin
  				data_in1 = outsquarex + outapplexoffset;
@@ -255,18 +266,6 @@ module lut_driver #(
 		.we(1'b0), 
 		.addr(apple_count), 
 		.dout(outappleyoffset));
-				
-//	trianglex_rom trianglex
-//		(.clk(clk), 
-//		.we(1'b0), 
-//		.addr(count), 
-//		.dout(outtrianglex));
-
-//	triangley_rom triangley
-//		(.clk(clk), 
-//		.we(1'b0), 
-//		.addr(count), 
-//		.dout(outtriangley));
 				
     dac_handshake dac_mod(.clk(clk), 
                          .rst(rst), 
