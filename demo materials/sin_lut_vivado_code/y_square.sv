@@ -1,5 +1,6 @@
 module y_square #(
-    parameter LUT_SIZE = 5
+    parameter LUT_SIZE = 5,
+    parameter SQUARE_SIZE = 128
 )
 (
     input clk,
@@ -15,8 +16,8 @@ module y_square #(
     initial begin
 		rom[0] = 12'd0;
 		rom[1] = 12'd0;
-		rom[2] = 12'd99;
-		rom[3] = 12'd99;
+		rom[2] = 12'(SQUARE_SIZE-1);
+		rom[3] = 12'(SQUARE_SIZE-1);
 		rom[4] = 12'd0;
     end
 

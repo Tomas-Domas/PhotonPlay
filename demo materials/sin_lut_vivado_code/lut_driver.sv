@@ -5,11 +5,11 @@ module lut_driver #(
     localparam APPLE_OFFSET_LUT_SIZE = 500,
 	localparam BORDER_LUT_SIZE = 5,
 	localparam SQUARE_LUT_SIZE = 5,
-	localparam VELOCITY = 100,
+	localparam VELOCITY = 128,
 	localparam MAX_NUM_SEGMENTS = 64,
 	localparam TIME_TO_SEND = 16,
-	localparam SQUARE_X_BOX = 99,
-	localparam SQUARE_Y_BOX = 99,
+	localparam SQUARE_X_BOX = VELOCITY-1,
+	localparam SQUARE_Y_BOX = VELOCITY-1,
 	localparam SPEED_DOWN = 1
 )
 (
@@ -60,7 +60,7 @@ module lut_driver #(
 						count <= count + 1;
 						if(count == SQUARE_LUT_SIZE-1) begin
 							count <= '0;
-							if(current_segment == MAX_NUM_SEGMENTS-1) begin //replace this with the last known seg needed to draw
+							if(current_segment == MAX_NUM_SEGMENTS-1) begin
 								current_segment <= '0;
 								state_r <= COUNT_APPLE;
 							end
@@ -86,15 +86,25 @@ module lut_driver #(
 	logic [11:0] pos_y[MAX_NUM_SEGMENTS-1:0];
 	logic [$clog2(SPEED_DOWN)-1:0] speed_count;
 	logic signed [12:0] next_pos_x, next_pos_y;
+	logic signed [12:0] x_velocity, y_velocity;
+	logic [$clog2(APPLE_OFFSET_LUT_SIZE)-1:0] apple_count;
 
 	assign next_pos_x = signed'({1'b0, pos_x[0]}) + x_velocity;
 	assign next_pos_y = signed'({1'b0, pos_y[0]}) + y_velocity;
 
-    always_ff @(posedge clk) begin //moving triangle
+	function void reset_pos_vel();
+		current_length <= 1;
+		pos_x <= '{default: 4096/2};
+		pos_y <= '{default: 4096/2};
+		x_velocity <= '0;
+		y_velocity <= '0;
+	endfunction
+
+    always_ff @(posedge clk) begin 
         if(rst) begin
 			speed_count <= '0;
-            pos_x <= '{default: 4095/2};
-            pos_y <= '{default: 4095/2};
+			apple_count <= '0;
+			reset_pos_vel();
         end
         else if(state_r == COUNT_APPLE && count == SQUARE_LUT_SIZE-1 && ready) begin
 			if(speed_count < SPEED_DOWN) begin
@@ -105,104 +115,69 @@ module lut_driver #(
 				pos_x[0] <= next_pos_x[11:0];
 				pos_y[0] <= next_pos_y[11:0]; 
 
-				//collision detection for x cases
-				if (next_pos_x + SQUARE_X_BOX > 4095) begin
-					pos_x[0] <= 4095/2;
-					pos_y[0] <= 4095/2;
-				end 
-				else if (next_pos_x < 0) begin
-					pos_x[0] <= 4095/2;
-					pos_y[0] <= 4095/2;
-				end
-
-				//collision detection for y cases
-				if (next_pos_y + SQUARE_Y_BOX > 4095) begin
-					pos_x[0] <= 4095/2;
-					pos_y[0] <= 4095/2;
-				end 
-				else if (next_pos_y < 0) begin
-					pos_x[0] <= 4095/2;
-					pos_y[0] <= 4095/2;
-				end
-
-				// IF next pos equals ANY of the current segments minus the final one, then detect as collision and reset the game
-				//for (int i = 1; i < MAX_NUM_SEGMENTS; i++) begin
-					//if ((next_pos_x[11:0] + SQUARE_X_BOX >= pos_x[i]) &&
-					//(next_pos_x[11:0] <= pos_x[i] + SQUARE_X_BOX) &&
-					//(next_pos_y[11:0] + SQUARE_Y_BOX >= pos_y[i]) &&
-					//(next_pos_y[11:0] <= pos_y[i] + SQUARE_Y_BOX)) begin
-						//Reset position				
-						//pos_x[0] <= 4095/2;
-						//pos_y[0] <= 4095/2;
-					//end
-				//end
-
 				for(int i=1; i<MAX_NUM_SEGMENTS; i++) begin
 					pos_x[i] <= pos_x[i-1];
 					pos_y[i] <= pos_y[i-1];
 				end
-			end
-        end
 
-    end
+				casez(btn[3:0])
+					4'b??01: begin
+						if(x_velocity == 0) begin
+							x_velocity <= VELOCITY;
+							y_velocity <= '0;
+						end
+					end
+					4'b??10: begin
+						if(x_velocity == 0) begin
+							x_velocity <= -1*VELOCITY;
+							y_velocity <= '0;
+						end
+					end
+					4'b01??: begin
+						if(y_velocity == 0) begin
+							x_velocity <='0;
+							y_velocity <= VELOCITY;
+						end
+					end
+					4'b10??: begin
+						if(y_velocity == 0) begin
+							x_velocity <='0;
+							y_velocity <= -1*VELOCITY;
+						end
+					end
+					default: begin
+						x_velocity <= x_velocity;
+						y_velocity <= y_velocity;
+					end 
+				endcase
 
-	logic signed [12:0] x_velocity, y_velocity;
-	always_ff @(posedge clk) begin
-		if (rst) begin
-			x_velocity <= '0;
-			y_velocity <= '0;
-		end
-		else begin
-			casez(btn[3:0])
-				4'b??01: begin
-					if(x_velocity == 0) begin
-						x_velocity <= VELOCITY;
-						y_velocity <= '0;
-					end
-				end
-				4'b??10: begin
-					if(x_velocity == 0) begin
-						x_velocity <= -1*VELOCITY;
-						y_velocity <= '0;
-					end
-				end
-				4'b01??: begin
-					if(y_velocity == 0) begin
-						x_velocity <='0;
-						y_velocity <= VELOCITY;
-					end
-				end
-				4'b10??: begin
-					if(y_velocity == 0) begin
-						x_velocity <='0;
-						y_velocity <= -1*VELOCITY;
-					end
-				end
-				default: begin
-					x_velocity <= x_velocity;
-					y_velocity <= y_velocity;
+				if ((next_pos_x + SQUARE_X_BOX > 4095) || //x right
+					(next_pos_x < 0) || 				  //x left
+					(next_pos_y + SQUARE_Y_BOX > 4095) || //y top
+					(next_pos_y < 0)) begin			      //y bottom
+					reset_pos_vel();
 				end 
-			endcase
-		end 	
-	end
-	
-	logic [$clog2(APPLE_OFFSET_LUT_SIZE)-1:0] apple_count;
-	always_ff @(posedge clk) begin //collision detection for apple
-        if(rst) begin
-			apple_count <= '0;
-			//current_length <= 3;
-			current_length <= MAX_NUM_SEGMENTS;
-        end
-        else begin
-			if ((next_pos_x[11:0] + SQUARE_X_BOX >= outapplexoffset) && 
-				(next_pos_x[11:0] <= outapplexoffset + SQUARE_X_BOX) &&
-				(next_pos_y[11:0] <= outappleyoffset + SQUARE_Y_BOX) &&
-				(next_pos_y[11:0] + SQUARE_Y_BOX >= outappleyoffset)) begin 
+
+				// IF next pos equals ANY of the current segments minus the final one, then detect as collision and reset the game
+				for (int i = 1; i < current_length; i++) begin
+					if ((next_pos_x[11:0] + SQUARE_X_BOX >= pos_x[i]) &&
+					(next_pos_x[11:0] <= pos_x[i] + SQUARE_X_BOX) &&
+					(next_pos_y[11:0] + SQUARE_Y_BOX >= pos_y[i]) &&
+					(next_pos_y[11:0] <= pos_y[i] + SQUARE_Y_BOX)) begin
+						reset_pos_vel();
+					end
+				end
+
+				if ((next_pos_x[11:0] + SQUARE_X_BOX >= outapplexoffset) && 
+					(next_pos_x[11:0] <= outapplexoffset + SQUARE_X_BOX) &&
+					(next_pos_y[11:0] <= outappleyoffset + SQUARE_Y_BOX) &&
+					(next_pos_y[11:0] + SQUARE_Y_BOX >= outappleyoffset)) begin 
 					apple_count <= apple_count + 1;
-					//current_length  <= current_length + 3;
+					current_length  <= current_length + 3;
+				end
 			end
-		end
-	end
+        end
+    end
 
  	//mux outputs to chose which rom will be drawn
  	always_comb begin
@@ -243,13 +218,13 @@ module lut_driver #(
 		.addr(count), 
 		.dout(outbordery));
 				
-	x_square squarex
+	x_square #(.SQUARE_SIZE(VELOCITY)) squarex 
 		(.clk(clk), 
 		.we(1'b0), 
 		.addr(count), 
 		.dout(outsquarex));
 			
-	y_square squarey
+	y_square #(.SQUARE_SIZE(VELOCITY)) squarey 
 		(.clk(clk), 
 		.we(1'b0), 
 		.addr(count), 

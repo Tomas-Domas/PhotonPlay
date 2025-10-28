@@ -1,5 +1,6 @@
 module x_square #(
-    parameter LUT_SIZE = 5
+    parameter LUT_SIZE = 5,
+    parameter SQUARE_SIZE = 128
 )
 (
     input clk,
@@ -13,11 +14,11 @@ module x_square #(
     reg [11:0] dout;
 
     initial begin
-		rom[0] = 12'd99;
+		rom[0] = 12'(SQUARE_SIZE-1);
 		rom[1] = 12'd0;
 		rom[2] = 12'd0;
-		rom[3] = 12'd99;
-		rom[4] = 12'd99;
+		rom[3] = 12'(SQUARE_SIZE-1);
+		rom[4] = 12'(SQUARE_SIZE-1);
     end
 
     always @(posedge clk) begin
