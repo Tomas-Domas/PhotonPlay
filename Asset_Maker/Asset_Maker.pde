@@ -1,5 +1,5 @@
 
-int GRID_RESOLUTION = 15;
+int GRID_RESOLUTION = 51;
 int ALIGNMENT_SPACING = 7;
 
 float GRID_SIZE;
@@ -45,7 +45,7 @@ void draw() {
   }
 
   // Draw circles and lines connecting them
-  for (int i = 0; i < points.size(); i ++) {
+  for (int i = 0; i < points.size(); i++) {
     noStroke();
     circle(
       (points.get(i).x + 0.5) * GRID_SIZE, 
@@ -100,5 +100,29 @@ void rightClick(int col, int row) {
       points.remove(i);
       return;
     }
+  }
+}
+
+
+void keyPressed() {
+  int x_delta = 0;
+  int y_delta = 0;
+  if (key == CODED) {
+    if (keyCode == UP) {
+      y_delta = -1;
+    } else if (keyCode == DOWN) {
+      y_delta = 1;
+    } else if (keyCode == LEFT) {
+      x_delta = -1;
+    } else if (keyCode == RIGHT) {
+      x_delta = 1;
+    }
+
+    for (int i = 0; i < points.size(); i++) {
+      Point p = points.get(i);
+      p.x += x_delta;
+      p.y += y_delta;
+    }
+
   }
 }
