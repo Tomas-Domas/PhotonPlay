@@ -6,11 +6,14 @@ module lut_driver #(
 	localparam BORDER_LUT_SIZE = 5,
 	localparam SQUARE_LUT_SIZE = 5,
 	localparam VELOCITY = 128,
-	localparam MAX_NUM_SEGMENTS = 64,
+	localparam MAX_NUM_SEGMENTS = 32, 
 	localparam TIME_TO_SEND = 16,
 	localparam SQUARE_X_BOX = VELOCITY-1,
 	localparam SQUARE_Y_BOX = VELOCITY-1,
-	localparam SPEED_DOWN = 1
+	localparam DRAW_UPDATE_SPEED_DOWN = 200, 
+	localparam POS_UPDATE_SPEED_DOWN = 2,
+	localparam REDRAW_BORDER = 5,
+	localparam REDRAW_APPLE = 3
 )
 (
     input logic clk,
@@ -26,6 +29,9 @@ module lut_driver #(
 
     logic [11:0] data_in1, data_in2;
 	logic [11:0] outborderx, outbordery, outsquarex, outsquarey, outapplexoffset, outappleyoffset;
+	logic [$clog2(DRAW_UPDATE_SPEED_DOWN)-1:0] draw_update_speed_down_count;
+	logic [$clog2(REDRAW_BORDER)-1:0] redraw_border_count; 
+	logic [$clog2(REDRAW_APPLE)-1:0] redraw_apple_count; 
     logic [$clog2(MAX_LUT_SIZE)-1:0] count;
 	logic [$clog2(MAX_NUM_SEGMENTS)-1:0] current_segment, current_length;
     logic go;
@@ -37,27 +43,42 @@ module lut_driver #(
     } state_t;
     state_t state_r;
 
+	function void update_draw_count();
+		draw_update_speed_down_count <= draw_update_speed_down_count + 1;
+		if(draw_update_speed_down_count == DRAW_UPDATE_SPEED_DOWN-1) begin
+			draw_update_speed_down_count <= '0;
+			count <= count + 1;
+		end
+	endfunction
+
 	//Draw loop
     always_ff @(posedge clk) begin
         if(rst) begin
             count <= '0;
 			current_segment <= '0;
             state_r <= COUNT_BORDER;
+			draw_update_speed_down_count <= '0;
+			redraw_border_count <= '0;
+			redraw_apple_count <= '0;
         end
         else begin
             case(state_r)
                 COUNT_BORDER: begin
 					if (ready) begin
-						count <= count + 1;
+						update_draw_count();
 						if(count == BORDER_LUT_SIZE-1) begin
 							count <= '0;
-						    state_r <= COUNT_SEGMENTS;
+							if(redraw_border_count == REDRAW_BORDER-1) begin
+								redraw_border_count <= '0;
+						    	state_r <= COUNT_SEGMENTS;
+							end
+							else redraw_border_count <= redraw_border_count + 1;
 						end
                     end
                 end
 				COUNT_SEGMENTS: begin
 					if (ready) begin
-						count <= count + 1;
+						update_draw_count();
 						if(count == SQUARE_LUT_SIZE-1) begin
 							count <= '0;
 							if(current_segment == MAX_NUM_SEGMENTS-1) begin
@@ -70,10 +91,14 @@ module lut_driver #(
 				end
 				COUNT_APPLE: begin
 					if (ready) begin
-						count <= count + 1;
+						update_draw_count();
 						if(count == SQUARE_LUT_SIZE-1) begin
 							count <= '0;
-							state_r <= COUNT_BORDER;
+							if(redraw_apple_count == REDRAW_APPLE-1) begin
+								redraw_apple_count <= '0;
+								state_r <= COUNT_BORDER;
+							end
+							else redraw_apple_count <= redraw_apple_count + 1;
 						end
                     end
 				end
@@ -84,7 +109,7 @@ module lut_driver #(
 	//position update logic
 	logic [11:0] pos_x[MAX_NUM_SEGMENTS-1:0];
 	logic [11:0] pos_y[MAX_NUM_SEGMENTS-1:0];
-	logic [$clog2(SPEED_DOWN)-1:0] speed_count;
+	logic [$clog2(POS_UPDATE_SPEED_DOWN)-1:0] pos_update_speed_down_count;
 	logic signed [12:0] next_pos_x, next_pos_y;
 	logic signed [12:0] x_velocity, y_velocity;
 	logic [$clog2(APPLE_OFFSET_LUT_SIZE)-1:0] apple_count;
@@ -102,16 +127,15 @@ module lut_driver #(
 
     always_ff @(posedge clk) begin 
         if(rst) begin
-			speed_count <= '0;
+			pos_update_speed_down_count <= '0;
 			apple_count <= '0;
 			reset_pos_vel();
         end
         else if(state_r == COUNT_APPLE && count == SQUARE_LUT_SIZE-1 && ready) begin
-			if(speed_count < SPEED_DOWN) begin
-				speed_count <= speed_count + 1;
-			end
-			else begin
-				speed_count <= '0;
+			pos_update_speed_down_count <= pos_update_speed_down_count + 1;
+
+			if(pos_update_speed_down_count == POS_UPDATE_SPEED_DOWN-1) begin
+				pos_update_speed_down_count <= '0;
 				pos_x[0] <= next_pos_x[11:0];
 				pos_y[0] <= next_pos_y[11:0]; 
 
