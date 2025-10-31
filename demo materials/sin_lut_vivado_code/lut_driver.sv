@@ -5,6 +5,7 @@ module lut_driver #(
     localparam APPLE_OFFSET_LUT_SIZE = 500,
 	localparam BORDER_LUT_SIZE = 5,
 	localparam SQUARE_LUT_SIZE = 5,
+	localparam WIN_LUT_SIZE = 5,
 	localparam VELOCITY = 128,
 	localparam MAX_NUM_SEGMENTS = 32, 
 	localparam TIME_TO_SEND = 16,
@@ -28,18 +29,20 @@ module lut_driver #(
 );
 
     logic [11:0] data_in1, data_in2;
-	logic [11:0] outborderx, outbordery, outsquarex, outsquarey, outapplexoffset, outappleyoffset;
+	logic [11:0] outborderx, outbordery, outsquarex, outsquarey, outwinx, outwiny, outapplexoffset, outappleyoffset;
 	logic [$clog2(DRAW_UPDATE_SPEED_DOWN)-1:0] draw_update_speed_down_count;
 	logic [$clog2(REDRAW_BORDER)-1:0] redraw_border_count; 
 	logic [$clog2(REDRAW_APPLE)-1:0] redraw_apple_count; 
     logic [$clog2(MAX_LUT_SIZE)-1:0] count;
-	logic [$clog2(MAX_NUM_SEGMENTS)-1:0] current_segment, current_length;
+	logic [$clog2(MAX_NUM_SEGMENTS)-1:0] current_segment;
+	logic [$clog2(MAX_NUM_SEGMENTS):0] current_length;
     logic go;
 
     typedef enum logic [1:0] {
         COUNT_BORDER,
 		COUNT_SEGMENTS,
-		COUNT_APPLE
+		COUNT_APPLE,
+		COUNT_WIN
     } state_t;
     state_t state_r;
 
@@ -92,7 +95,10 @@ module lut_driver #(
 				COUNT_APPLE: begin
 					if (ready) begin
 						update_draw_count();
-						if(count == SQUARE_LUT_SIZE-1) begin
+						if(current_length >= MAX_NUM_SEGMENTS) begin
+							count <= '0;
+							state_r <= COUNT_WIN;
+						end else if(count == SQUARE_LUT_SIZE-1) begin
 							count <= '0;
 							if(redraw_apple_count == REDRAW_APPLE-1) begin
 								redraw_apple_count <= '0;
@@ -101,6 +107,15 @@ module lut_driver #(
 							else redraw_apple_count <= redraw_apple_count + 1;
 						end
                     end
+				end
+				COUNT_WIN: begin
+					if (ready) begin
+						update_draw_count();
+						if(count == WIN_LUT_SIZE) begin
+							count <= '0;
+							state_r <= COUNT_WIN;
+						end
+					end
 				end
             endcase
         end
@@ -226,6 +241,10 @@ module lut_driver #(
  				data_in1 = outsquarex + outapplexoffset;
  				data_in2 = outsquarey + outappleyoffset;
  			end
+			COUNT_WIN: begin
+				data_in1 = outwinx;
+				data_in2 = outwiny;
+			end
  		endcase
  	end
     assign go = ready;
@@ -253,6 +272,18 @@ module lut_driver #(
 		.we(1'b0), 
 		.addr(count), 
 		.dout(outsquarey));
+		
+	x_win winx
+		(.clk(clk), 
+		.we(1'b0), 
+		.addr(count), 
+		.dout(outwinx));
+			
+	y_win winy
+		(.clk(clk), 
+		.we(1'b0), 
+		.addr(count), 
+		.dout(outwiny));
 		
 	x_apple_offset applexoffset
 		(.clk(clk), 
