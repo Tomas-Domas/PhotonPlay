@@ -3,7 +3,7 @@
 module lut_driver #(
 	localparam MAX_LUT_SIZE = 4096,
     localparam APPLE_OFFSET_LUT_SIZE = 500,
-	localparam BORDER_LUT_SIZE = 5,
+	localparam BORDER_LUT_SIZE = 8,
 	localparam SQUARE_LUT_SIZE = 5,
 	localparam WIN_LUT_SIZE = 5,
 	localparam VELOCITY = 128,
@@ -11,9 +11,9 @@ module lut_driver #(
 	localparam TIME_TO_SEND = 16,
 	localparam SQUARE_X_BOX = VELOCITY-1,
 	localparam SQUARE_Y_BOX = VELOCITY-1,
-	localparam DRAW_UPDATE_SPEED_DOWN = 200, 
+	localparam DRAW_UPDATE_SPEED_DOWN = 175, 
 	localparam POS_UPDATE_SPEED_DOWN = 2,
-	localparam REDRAW_BORDER = 5,
+	localparam REDRAW_BORDER = 3,
 	localparam REDRAW_APPLE = 3
 )
 (
@@ -46,13 +46,13 @@ module lut_driver #(
     } state_t;
     state_t state_r;
 
-	function void update_draw_count();
-		draw_update_speed_down_count <= draw_update_speed_down_count + 1;
-		if(draw_update_speed_down_count == DRAW_UPDATE_SPEED_DOWN-1) begin
-			draw_update_speed_down_count <= '0;
-			count <= count + 1;
-		end
-	endfunction
+	// function void update_draw_count();
+	// 	draw_update_speed_down_count <= draw_update_speed_down_count + 1;
+	// 	if(draw_update_speed_down_count == DRAW_UPDATE_SPEED_DOWN-1) begin
+	// 		draw_update_speed_down_count <= '0;
+	// 		count <= count + 1;
+	// 	end
+	// endfunction
 
 	//Draw loop
     always_ff @(posedge clk) begin
@@ -68,52 +68,77 @@ module lut_driver #(
             case(state_r)
                 COUNT_BORDER: begin
 					if (ready) begin
-						update_draw_count();
-						if(count == BORDER_LUT_SIZE-1) begin
-							count <= '0;
-							if(redraw_border_count == REDRAW_BORDER-1) begin
-								redraw_border_count <= '0;
-						    	state_r <= COUNT_SEGMENTS;
+						draw_update_speed_down_count <= draw_update_speed_down_count + 1;
+						if(draw_update_speed_down_count == DRAW_UPDATE_SPEED_DOWN-1) begin
+							draw_update_speed_down_count <= '0;
+
+							if(count == BORDER_LUT_SIZE-1) begin
+								count <= '0;
+								if(redraw_border_count == REDRAW_BORDER-1) begin
+									redraw_border_count <= '0;
+									state_r <= COUNT_SEGMENTS;
+								end
+								else redraw_border_count <= redraw_border_count + 1;
 							end
-							else redraw_border_count <= redraw_border_count + 1;
+							else begin
+								count <= count + 1;
+							end
 						end
                     end
                 end
 				COUNT_SEGMENTS: begin
 					if (ready) begin
-						update_draw_count();
-						if(count == SQUARE_LUT_SIZE-1) begin
-							count <= '0;
-							if(current_segment == MAX_NUM_SEGMENTS-1) begin
-								current_segment <= '0;
-								state_r <= COUNT_APPLE;
+						draw_update_speed_down_count <= draw_update_speed_down_count + 1;
+						if(draw_update_speed_down_count == DRAW_UPDATE_SPEED_DOWN-1) begin
+							draw_update_speed_down_count <= '0;
+
+							if(count == SQUARE_LUT_SIZE-1) begin
+								count <= '0;
+								if(current_segment == MAX_NUM_SEGMENTS-1) begin
+									current_segment <= '0;
+									state_r <= COUNT_APPLE;
+								end
+								else current_segment <= current_segment + 1;
 							end
-							else current_segment <= current_segment + 1;
+							else begin
+								count <= count + 1;
+							end
 						end
                     end
 				end
 				COUNT_APPLE: begin
 					if (ready) begin
-						update_draw_count();
-						if(current_length >= MAX_NUM_SEGMENTS) begin
-							count <= '0;
-							state_r <= COUNT_WIN;
-						end else if(count == SQUARE_LUT_SIZE-1) begin
-							count <= '0;
-							if(redraw_apple_count == REDRAW_APPLE-1) begin
-								redraw_apple_count <= '0;
-								state_r <= COUNT_BORDER;
+						draw_update_speed_down_count <= draw_update_speed_down_count + 1;
+						if(draw_update_speed_down_count == DRAW_UPDATE_SPEED_DOWN-1) begin
+							draw_update_speed_down_count <= '0;
+
+							if(count == SQUARE_LUT_SIZE-1) begin
+								count <= '0;
+								if(redraw_apple_count == REDRAW_APPLE-1) begin
+									redraw_apple_count <= '0;
+									state_r <= COUNT_BORDER;
+								end
+								else redraw_apple_count <= redraw_apple_count + 1;
 							end
-							else redraw_apple_count <= redraw_apple_count + 1;
+							else begin
+								count <= count + 1;
+							end
 						end
                     end
 				end
 				COUNT_WIN: begin
 					if (ready) begin
-						update_draw_count();
-						if(count == WIN_LUT_SIZE) begin
-							count <= '0;
-							state_r <= COUNT_WIN;
+						draw_update_speed_down_count <= draw_update_speed_down_count + 1;
+						if(draw_update_speed_down_count == DRAW_UPDATE_SPEED_DOWN-1) begin
+							draw_update_speed_down_count <= '0;
+
+							if(count == WIN_LUT_SIZE) begin
+								count <= '0;
+								state_r <= COUNT_WIN;
+							end
+							else begin
+								count <= count + 1;
+							end
 						end
 					end
 				end
@@ -141,12 +166,14 @@ module lut_driver #(
 	endfunction
 
     always_ff @(posedge clk) begin 
+		logic [3:0] sampled_btn = btn;
+
         if(rst) begin
 			pos_update_speed_down_count <= '0;
 			apple_count <= '0;
 			reset_pos_vel();
         end
-        else if(state_r == COUNT_APPLE && count == SQUARE_LUT_SIZE-1 && ready) begin
+        else if(state_r == COUNT_APPLE && count == SQUARE_LUT_SIZE-1 && ready && draw_update_speed_down_count == DRAW_UPDATE_SPEED_DOWN-1 && redraw_apple_count == REDRAW_APPLE-1) begin
 			pos_update_speed_down_count <= pos_update_speed_down_count + 1;
 
 			if(pos_update_speed_down_count == POS_UPDATE_SPEED_DOWN-1) begin
@@ -159,7 +186,7 @@ module lut_driver #(
 					pos_y[i] <= pos_y[i-1];
 				end
 
-				casez(btn[3:0])
+				casez(sampled_btn[3:0])
 					4'b??01: begin
 						if(x_velocity == 0) begin
 							x_velocity <= VELOCITY;
