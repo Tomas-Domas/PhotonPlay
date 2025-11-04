@@ -116,7 +116,8 @@ module lut_driver #(
 								count <= '0;
 								if(redraw_apple_count == REDRAW_APPLE-1) begin
 									redraw_apple_count <= '0;
-									state_r <= COUNT_BORDER;
+									if(current_length >= MAX_NUM_SEGMENTS) state_r <= COUNT_WIN;
+									else state_r <= COUNT_BORDER;
 								end
 								else redraw_apple_count <= redraw_apple_count + 1;
 							end
