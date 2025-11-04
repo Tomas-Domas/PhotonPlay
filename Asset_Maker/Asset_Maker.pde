@@ -1,15 +1,23 @@
+int DRAW_GRID_RESOLUTION = 47;
+int ALIGNMENT_SPACING = 8;
 
-int GRID_RESOLUTION = 31;
-int ALIGNMENT_SPACING = 7;
-
-float GRID_SIZE;
+float DRAW_GRID_SIZE;
 float POINT_SIZE;
 float LINE_SIZE;
+
+int SCALING_GRID_RESOLUTION = 32;
+float SCALING_GRID_SIZE;
+float SCALING_FACTOR;
 
 ArrayList<Point> points = new ArrayList<Point>();
 Point currentPoint = new Point(0, 0);
 
 PImage img;
+
+final int DRAW_MODE = 0;
+final int SCALE_MODE = 1;
+
+int state = DRAW_MODE;
 
 void setup() {
     size(760, 760);
@@ -19,9 +27,10 @@ void setup() {
 
     points.add(currentPoint);
     
-    GRID_SIZE  = min(((float)width / GRID_RESOLUTION), ((float)height / GRID_RESOLUTION));
-    POINT_SIZE = GRID_SIZE * 0.8;
-    LINE_SIZE  = GRID_SIZE * 0.4;
+    DRAW_GRID_SIZE  = min(((float)width / DRAW_GRID_RESOLUTION), ((float)height / DRAW_GRID_RESOLUTION));
+    SCALING_GRID_SIZE  = min(((float)width / SCALING_GRID_RESOLUTION), ((float)height / SCALING_GRID_RESOLUTION));
+    POINT_SIZE = DRAW_GRID_SIZE * 0.8;
+    LINE_SIZE  = DRAW_GRID_SIZE * 0.4;
     
     img = loadImage("UF Logo.png");
     if (img.width > img.height) {
@@ -34,6 +43,16 @@ void setup() {
 
 void draw() {
     background(0);
+
+    if (state == DRAW_MODE) {
+        drawMode();
+    } else if (state == SCALE_MODE) {
+        scaleMode();
+    }
+}
+
+
+void drawMode() {
     tint(51);
     image(img, 0, 0);
 
@@ -43,15 +62,15 @@ void draw() {
     
     // Draw grid lines
     stroke(150);
-    for (int i = 0; i < GRID_RESOLUTION; i++) {
+    for (int i = 0; i < DRAW_GRID_RESOLUTION; i++) {
 
-        if((i - GRID_RESOLUTION/2) % ALIGNMENT_SPACING == 0 || (i - GRID_RESOLUTION/2 - 1) % ALIGNMENT_SPACING == 0) {
+        if((i - DRAW_GRID_RESOLUTION/2) % ALIGNMENT_SPACING == 0 || (i - DRAW_GRID_RESOLUTION/2 - 1) % ALIGNMENT_SPACING == 0) {
             strokeWeight(1);
         } else {
             strokeWeight(0.2);
         }
 
-        int offset = (int)((i) * GRID_SIZE);
+        int offset = (int)((i) * DRAW_GRID_SIZE);
         line(offset, 0,   offset, height);
         line(0, offset,   width, offset);
     }
@@ -61,13 +80,13 @@ void draw() {
         Point current = points.get(i);
         noStroke();
         circle(
-            gridToCanvas(current.x),
-            gridToCanvas(current.y),
+            gridToDrawCanvas(current.x),
+            gridToDrawCanvas(current.y),
             POINT_SIZE
         );
         
         stroke(255, 0, 0);
-        strokeWeight(GRID_SIZE * 0.3);
+        strokeWeight(DRAW_GRID_SIZE * 0.3);
 
         if(i == 0)
             continue;
@@ -75,14 +94,42 @@ void draw() {
         Point previous = points.get(i-1);
         if (previous.laser_en) {
             line(
-                gridToCanvas(current.x), 
-                gridToCanvas(current.y), 
-                gridToCanvas(previous.x), 
-                gridToCanvas(previous.y)
+                gridToDrawCanvas(current.x), 
+                gridToDrawCanvas(current.y), 
+                gridToDrawCanvas(previous.x), 
+                gridToDrawCanvas(previous.y)
             );
         }
     }
+}
 
+
+void scaleMode() {
+    // Draw grid lines
+    stroke(150);
+    strokeWeight(0.2);
+    for (int i = 0; i < SCALING_GRID_RESOLUTION; i++) {
+        int offset = (int)((i) * SCALING_GRID_SIZE);
+        line(offset, 0,   offset, height);
+        line(0, offset,   width, offset);
+    }
+
+    // Draw shape
+    stroke(255, 0, 0);
+    strokeWeight(floor(SCALING_FACTOR * 0.2 + 1));
+    for (int i = 1; i < points.size()-1; i++) {
+        Point current = points.get(i);
+        Point previous = points.get(i-1);
+
+        if (previous.laser_en) {
+            line(
+                gridToScaleCanvas(current.x)  + mouseX,
+                gridToScaleCanvas(current.y)  + mouseY,
+                gridToScaleCanvas(previous.x) + mouseX,
+                gridToScaleCanvas(previous.y) + mouseY
+            );
+        }
+    }
 }
 
 
@@ -115,61 +162,100 @@ void rightClick() {
 
 
 void keyPressed() {
-    if (key == CODED) {
-        if (keyCode == UP) {
-            for (int i = 0; i < points.size(); i++)
-                points.get(i).y--;
-            return;
+    if (state == DRAW_MODE) {
+        if (key == CODED) {
+            if (keyCode == UP) {
+                for (int i = 0; i < points.size(); i++)
+                    points.get(i).y--;
+                return;
+            }
+            if (keyCode == DOWN) {
+                for (int i = 0; i < points.size(); i++)
+                    points.get(i).y++;
+                return;
+            }
+            if (keyCode == LEFT) {
+                for (int i = 0; i < points.size(); i++)
+                    points.get(i).x--;
+                return;
+            }
+            if (keyCode == RIGHT) {
+                for (int i = 0; i < points.size(); i++)
+                    points.get(i).x++;
+                return;
+            }
+
+            println(keyCode);
+
+        } else {
+            if (key == ' ') {
+                if (points.size() > 1)
+                    points.get(points.size()-2).laser_en ^= true;  // toggle laser_en
+                return;
+            }
+            if (key == ENTER) {
+                SCALING_FACTOR = DRAW_GRID_RESOLUTION / 4096.0 * 50.0;
+                state = SCALE_MODE;
+                println("Switching to Scaling Mode");
+                return;
+            }
+
+            println(key);
+
         }
-        if (keyCode == DOWN) {
-            for (int i = 0; i < points.size(); i++)
-                points.get(i).y++;
-            return;
-        }
-        if (keyCode == LEFT) {
-            for (int i = 0; i < points.size(); i++)
-                points.get(i).x--;
-            return;
-        }
-        if (keyCode == RIGHT) {
-            for (int i = 0; i < points.size(); i++)
-                points.get(i).x++;
-            return;
-        }
-        println(keyCode);
-        
-    } else {
-        if (key == ' ') {
-            if (points.size() > 1)
-                points.get(points.size()-2).laser_en ^= true;  // toggle laser_en
-            return;
-        }
-        if (key == ENTER) {
-            println("Writing to File");
-            writeToFile();
-            return;
-        }
-        println(key);
     }
+
+    else if (state == SCALE_MODE) {
+        if (key == CODED) {
+            if (keyCode == UP) {
+                SCALING_FACTOR *= 1.1;
+                return;
+            }
+            if (keyCode == DOWN) {
+                SCALING_FACTOR /= 1.1;
+                return;
+            }
+
+            println(keyCode);
+
+        } else {
+            if (key == ENTER) {
+                println("Writing LUT to File");
+                writeToFile();
+                state = DRAW_MODE;
+                return;
+            }
+
+            println(key);
+
+        }
+    }
+    
 }
 
 
 int canvasToGrid(int coord) {
-    return floor(coord / GRID_SIZE);
+    return floor(coord / DRAW_GRID_SIZE);
 }
 
 
-float gridToCanvas(int coord) {
-    return (coord + 0.5) * GRID_SIZE;
+float gridToDrawCanvas(int coord) {
+    return (coord + 0.5) * DRAW_GRID_SIZE;
 }
+
+
+float gridToScaleCanvas(int coord) {
+    return ((coord - DRAW_GRID_RESOLUTION*0.5) * SCALING_FACTOR);
+}
+
 
 void writeToFile() {
     PrintWriter fileX = createWriter("lut_x.txt");
     PrintWriter fileY = createWriter("lut_y.txt");
 
     for (int i = 0; i < points.size()-2; i++) {
-        int x = points.get(i).x;
-        int y = points.get(i).y;
+        int x = round((gridToScaleCanvas(points.get(i).x)  + mouseX) * 4096.0 / width);
+        int y = round((gridToScaleCanvas(points.get(i).y)  + mouseY) * 4096.0 / width);
 
         fileX.printf("rom[%d] = 12'd%d;\n", i, x);
         fileY.printf("rom[%d] = 12'd%d;\n", i, y);
