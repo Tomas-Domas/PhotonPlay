@@ -1,4 +1,4 @@
-int DRAW_GRID_RESOLUTION = 47;
+int DRAW_GRID_RESOLUTION = 4095;
 int ALIGNMENT_SPACING = 8;
 
 float DRAW_GRID_SIZE;
@@ -32,7 +32,7 @@ void setup() {
     POINT_SIZE = DRAW_GRID_SIZE * 0.8;
     LINE_SIZE  = DRAW_GRID_SIZE * 0.4;
     
-    img = loadImage("UF Logo.png");
+    img = loadImage("hi.jpg");
     if (img.width > img.height) {
         img.resize(width, 0);
     } else {

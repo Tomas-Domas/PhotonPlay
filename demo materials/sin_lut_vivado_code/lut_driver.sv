@@ -6,7 +6,7 @@ module lut_driver #(
 	localparam BORDER_LUT_SIZE = 8,
 	localparam SQUARE_LUT_SIZE = 5,
 	localparam WIN_LUT_SIZE = 5,
-	localparam START_LUT_SIZE = 5,
+	localparam START_LUT_SIZE = 169,
 	localparam VELOCITY = 128,
 	localparam MAX_NUM_SEGMENTS = 32,
 	localparam TIME_TO_SEND = 16,
