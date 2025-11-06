@@ -1,5 +1,7 @@
 import math
 import csv
+import random
+
 
 # SIZE CONSTANTS
 LUT_ADDRESS_SIZE = 7   # Create LUT with 2^x entries 
@@ -9,20 +11,29 @@ def f(x):
     return math.sin(x) + 0.5*math.sin(10*x)
 
 def main():
-    x_lut = create_lut(
-        function = math.cos,
-        domain = [0, 2*math.pi],
-        periodic = True
-    )
-    print()
-    y_lut = create_lut(
-        function = math.sin,
-        domain = [0, 2*math.pi],
-        periodic = True
-    )
+    
+    # Generate a list of (x, y) points from 0 to 31
+    points = [(x * 128, y * 128) for x in range(32) for y in range(32)]
+    random.shuffle(points)
+    
+    x_lut = [str(point[0]) for point in points]
+    y_lut = [str(point[1]) for point in points]
+    
+    # x_lut = create_lut(
+    #     function = math.cos,
+    #     domain = [0, 2*math.pi],
+    #     periodic = True
+    # )
+    # print()
+    # y_lut = create_lut(
+    #     function = math.sin,
+    #     domain = [0, 2*math.pi],
+    #     periodic = True
+    # )
 
     # write_csv("waveform.csv", x_lut, y_lut)
-    write_verilog_LUT("verilog_lut.txt", x_lut)
+    write_verilog_LUT("random_apple_lut_x.txt", x_lut)
+    write_verilog_LUT("random_apple_lut_y.txt", y_lut)
 
     # atan_lut = create_lut(
     #     function = math.atan,

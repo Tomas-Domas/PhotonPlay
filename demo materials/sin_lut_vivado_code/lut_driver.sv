@@ -2,7 +2,7 @@
 
 module lut_driver #(
 	localparam MAX_LUT_SIZE = 4096,
-    localparam APPLE_OFFSET_LUT_SIZE = 500,
+    localparam APPLE_OFFSET_LUT_SIZE = 1024,
 	localparam BORDER_LUT_SIZE = 8,
 	localparam SQUARE_LUT_SIZE = 5,
 	localparam WIN_LUT_SIZE = 5,
