@@ -6,12 +6,13 @@ module lut_driver #(
 	localparam BORDER_LUT_SIZE = 8,
 	localparam SQUARE_LUT_SIZE = 5,
 	localparam WIN_LUT_SIZE = 5,
+	localparam START_LUT_SIZE = 5,
 	localparam VELOCITY = 128,
-	localparam MAX_NUM_SEGMENTS = 32, 
+	localparam MAX_NUM_SEGMENTS = 32,
 	localparam TIME_TO_SEND = 16,
 	localparam SQUARE_X_BOX = VELOCITY-1,
 	localparam SQUARE_Y_BOX = VELOCITY-1,
-	localparam DRAW_UPDATE_SPEED_DOWN = 175, 
+	localparam DRAW_UPDATE_SPEED_DOWN = 175,
 	localparam POS_UPDATE_SPEED_DOWN = 2,
 	localparam REDRAW_BORDER = 3,
 	localparam REDRAW_APPLE = 3
@@ -29,7 +30,7 @@ module lut_driver #(
 );
 
     logic [11:0] data_in1, data_in2;
-	logic [11:0] outborderx, outbordery, outsquarex, outsquarey, outwinx, outwiny, outapplexoffset, outappleyoffset;
+	logic [11:0] outborderx, outbordery, outsquarex, outsquarey, outwinx, outwiny, outstartx, outstarty, outapplexoffset, outappleyoffset;
 	logic [$clog2(DRAW_UPDATE_SPEED_DOWN)-1:0] draw_update_speed_down_count;
 	logic [$clog2(REDRAW_BORDER)-1:0] redraw_border_count; 
 	logic [$clog2(REDRAW_APPLE)-1:0] redraw_apple_count; 
@@ -38,7 +39,8 @@ module lut_driver #(
 	logic [$clog2(MAX_NUM_SEGMENTS):0] current_length;
     logic go;
 
-    typedef enum logic [1:0] {
+    typedef enum logic [2:0] {
+		COUNT_START,
         COUNT_BORDER,
 		COUNT_SEGMENTS,
 		COUNT_APPLE,
@@ -59,13 +61,34 @@ module lut_driver #(
         if(rst) begin
             count <= '0;
 			current_segment <= '0;
-            state_r <= COUNT_BORDER;
+            state_r <= COUNT_START;
 			draw_update_speed_down_count <= '0;
 			redraw_border_count <= '0;
 			redraw_apple_count <= '0;
         end
         else begin
             case(state_r)
+				COUNT_START: begin
+					if (ready) begin
+						if(btn != 0) begin
+							count <='0;
+							state_r <= COUNT_BORDER;
+						end else begin
+							draw_update_speed_down_count <= draw_update_speed_down_count + 1;
+							if(draw_update_speed_down_count == DRAW_UPDATE_SPEED_DOWN-1) begin
+								draw_update_speed_down_count <= '0;
+
+								if(count == START_LUT_SIZE) begin
+									state_r <= COUNT_START;
+									count <= '0;
+								end
+								else begin
+									count <= count + 1;
+								end
+							end
+						end
+					end
+				end
                 COUNT_BORDER: begin
 					if (ready) begin
 						draw_update_speed_down_count <= draw_update_speed_down_count + 1;
@@ -129,16 +152,21 @@ module lut_driver #(
 				end
 				COUNT_WIN: begin
 					if (ready) begin
-						draw_update_speed_down_count <= draw_update_speed_down_count + 1;
-						if(draw_update_speed_down_count == DRAW_UPDATE_SPEED_DOWN-1) begin
-							draw_update_speed_down_count <= '0;
+						if(btn != 0) begin
+							count <= '0;
+							state_r <= COUNT_BORDER;
+						end else begin
+							draw_update_speed_down_count <= draw_update_speed_down_count + 1;
+							if(draw_update_speed_down_count == DRAW_UPDATE_SPEED_DOWN-1) begin
+								draw_update_speed_down_count <= '0;
 
-							if(count == WIN_LUT_SIZE) begin
-								count <= '0;
-								state_r <= COUNT_WIN;
-							end
-							else begin
-								count <= count + 1;
+								if(count == WIN_LUT_SIZE) begin
+									count <= '0;
+									state_r <= COUNT_WIN;
+								end
+								else begin
+									count <= count + 1;
+								end
 							end
 						end
 					end
@@ -257,6 +285,10 @@ module lut_driver #(
         end 
 
  		case(state_r)
+			COUNT_START: begin
+ 				data_in1 = outstartx;
+ 				data_in2 = outstarty;
+ 			end
  			COUNT_BORDER: begin
  				data_in1 = outborderx;
  				data_in2 = outbordery;
@@ -300,39 +332,51 @@ module lut_driver #(
 		.we(1'b0), 
 		.addr(count), 
 		.dout(outsquarey));
-		
+
 	x_win winx
-		(.clk(clk), 
-		.we(1'b0), 
-		.addr(count), 
+		(.clk(clk),
+		.we(1'b0),
+		.addr(count),
 		.dout(outwinx));
-			
+	
 	y_win winy
-		(.clk(clk), 
-		.we(1'b0), 
-		.addr(count), 
+		(.clk(clk),
+		.we(1'b0),
+		.addr(count),
 		.dout(outwiny));
-		
+
+	x_start startx
+		(.clk(clk),
+		.we(1'b0),
+		.addr(count),
+		.dout(outstartx));
+
+	y_start starty
+		(.clk(clk),
+		.we(1'b0),
+		.addr(count),
+		.dout(outstarty));
+
 	x_apple_offset applexoffset
-		(.clk(clk), 
-		.we(1'b0), 
-		.addr(apple_count), 
+		(.clk(clk),
+		.we(1'b0),
+		.addr(apple_count),
 		.dout(outapplexoffset));
-			
+
 	y_apple_offset appleyoffset
-		(.clk(clk), 
-		.we(1'b0), 
-		.addr(apple_count), 
+		(.clk(clk),
+		.we(1'b0),
+		.addr(apple_count),
 		.dout(outappleyoffset));
-				
-    dac_handshake dac_mod(.clk(clk), 
-                         .rst(rst), 
-                         .go(go), 
+
+    dac_handshake dac_mod(.clk(clk),
+                         .rst(rst),
+                         .go(go),
                          .data_in1(data_in1),
                          .data_in2(data_in2),
-                         .dac_clk(dac_clk), 
-                         .chip_sel(chip_sel), 
-                         .data_out1(data_out1), 
+                         .dac_clk(dac_clk),
+                         .chip_sel(chip_sel),
+                         .data_out1(data_out1),
                          .data_out2(data_out2),
                          .ready(ready)
                          );
