@@ -1,5 +1,5 @@
 module bordery_rom #(
-    parameter LUT_SIZE = 8
+    parameter LUT_SIZE = 14
 )
 (
     input clk,
@@ -14,13 +14,19 @@ module bordery_rom #(
 
     initial begin
 		rom[0] = 12'd0;
-		rom[1] = 12'd0;
-		rom[2] = 12'd0;
-		rom[3] = 12'd2047;
-		rom[4] = 12'd4095;
-		rom[5] = 12'd4095;
+        rom[1] = 12'd0;
+		rom[2] = 12'd0; //
+		rom[3] = 12'd0;
+    	rom[4] = 12'd0;
+		rom[5] = 12'd2047; //
 		rom[6] = 12'd4095;
-		rom[7] = 12'd2047;
+        rom[7] = 12'd4095;
+		rom[8] = 12'd4095;//
+		rom[9] = 12'd4095;
+        rom[10] = 12'd4095;
+		rom[11] = 12'd2047;//
+        rom[12] = 12'd0;
+        rom[13] = 12'd0;
     end
 
     always @(posedge clk) begin

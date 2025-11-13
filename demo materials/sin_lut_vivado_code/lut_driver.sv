@@ -3,7 +3,7 @@
 module lut_driver #(
 	localparam MAX_LUT_SIZE = 4096,
     localparam APPLE_OFFSET_LUT_SIZE = 1024,
-	localparam BORDER_LUT_SIZE = 8,
+	localparam BORDER_LUT_SIZE = 14,
 	localparam SQUARE_LUT_SIZE = 5,
 	localparam WIN_LUT_SIZE = 5,
 	localparam START_LUT_SIZE = 169,
@@ -13,8 +13,8 @@ module lut_driver #(
 	localparam SQUARE_X_BOX = VELOCITY-1,
 	localparam SQUARE_Y_BOX = VELOCITY-1,
 	localparam DRAW_UPDATE_SPEED_DOWN = 175,
+	localparam DRAW_SEGMENTS_UPDATE_SPEED_DOWN = 75,
 	localparam POS_UPDATE_SPEED_DOWN = 2,
-	localparam REDRAW_BORDER = 3,
 	localparam REDRAW_APPLE = 3
 )
 (
@@ -31,8 +31,7 @@ module lut_driver #(
 
     logic [11:0] data_in1, data_in2;
 	logic [11:0] outborderx, outbordery, outsquarex, outsquarey, outwinx, outwiny, outstartx, outstarty, outapplexoffset, outappleyoffset;
-	logic [$clog2(DRAW_UPDATE_SPEED_DOWN)-1:0] draw_update_speed_down_count;
-	logic [$clog2(REDRAW_BORDER)-1:0] redraw_border_count; 
+	logic [$clog2(DRAW_UPDATE_SPEED_DOWN)-1:0] draw_update_speed_down_count; 
 	logic [$clog2(REDRAW_APPLE)-1:0] redraw_apple_count; 
     logic [$clog2(MAX_LUT_SIZE)-1:0] count;
 	logic [$clog2(MAX_NUM_SEGMENTS)-1:0] current_segment;
@@ -63,7 +62,6 @@ module lut_driver #(
 			current_segment <= '0;
             state_r <= COUNT_START;
 			draw_update_speed_down_count <= '0;
-			redraw_border_count <= '0;
 			redraw_apple_count <= '0;
         end
         else begin
@@ -97,11 +95,7 @@ module lut_driver #(
 
 							if(count == BORDER_LUT_SIZE-1) begin
 								count <= '0;
-								if(redraw_border_count == REDRAW_BORDER-1) begin
-									redraw_border_count <= '0;
-									state_r <= COUNT_SEGMENTS;
-								end
-								else redraw_border_count <= redraw_border_count + 1;
+								state_r <= COUNT_SEGMENTS;
 							end
 							else begin
 								count <= count + 1;
@@ -112,7 +106,7 @@ module lut_driver #(
 				COUNT_SEGMENTS: begin
 					if (ready) begin
 						draw_update_speed_down_count <= draw_update_speed_down_count + 1;
-						if(draw_update_speed_down_count == DRAW_UPDATE_SPEED_DOWN-1) begin
+						if(draw_update_speed_down_count == DRAW_SEGMENTS_UPDATE_SPEED_DOWN-1) begin
 							draw_update_speed_down_count <= '0;
 
 							if(count == SQUARE_LUT_SIZE-1) begin
@@ -278,10 +272,10 @@ module lut_driver #(
  	always_comb begin
         // Disable laser before the start of each draw
         if(count == '0) begin
-            laser_en = '1;
+            laser_en = '0;
         end
         else begin
-            laser_en = '0;
+            laser_en = '1;
         end 
 
  		case(state_r)
@@ -306,6 +300,9 @@ module lut_driver #(
 				data_in2 = outwiny;
 			end
  		endcase
+
+		data_in1 = 4095 - data_in1;
+		data_in2 = 4095 - data_in2;
  	end
     assign go = ready;
 

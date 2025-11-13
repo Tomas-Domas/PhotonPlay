@@ -59,9 +59,9 @@ set_property -dict { PACKAGE_PIN W19   IOSTANDARD LVCMOS33 } [get_ports { dac_cl
 
 # bottom half of pins (Currently Controller)
 set_property -dict { PACKAGE_PIN V16   IOSTANDARD LVCMOS33 } [get_ports { btn[0] }]; #IO_L18P_T2_34 Sch=jb_p[3]
-set_property -dict { PACKAGE_PIN W16   IOSTANDARD LVCMOS33 } [get_ports { btn[1] }]; #IO_L18N_T2_34 Sch=jb_n[3]
+set_property -dict { PACKAGE_PIN W13   IOSTANDARD LVCMOS33 } [get_ports { btn[1] }]; #IO_L18N_T2_34 Sch=jb_n[3]
 set_property -dict { PACKAGE_PIN V12   IOSTANDARD LVCMOS33 } [get_ports { btn[2] }]; #IO_L4P_T0_34 Sch=jb_p[4]
-set_property -dict { PACKAGE_PIN W13   IOSTANDARD LVCMOS33 } [get_ports { btn[3] }]; #IO_L4N_T0_34 Sch=jb_n[4]
+set_property -dict { PACKAGE_PIN W16   IOSTANDARD LVCMOS33 } [get_ports { btn[3] }]; #IO_L4N_T0_34 Sch=jb_n[4]
 
 ##Audio 
 
