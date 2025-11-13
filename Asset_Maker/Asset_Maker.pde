@@ -1,4 +1,4 @@
-int DRAW_GRID_RESOLUTION = 4095;
+int DRAW_GRID_RESOLUTION = 150;
 int ALIGNMENT_SPACING = 8;
 
 float DRAW_GRID_SIZE;
@@ -32,7 +32,7 @@ void setup() {
     POINT_SIZE = DRAW_GRID_SIZE * 0.8;
     LINE_SIZE  = DRAW_GRID_SIZE * 0.4;
     
-    img = loadImage("hi.jpg");
+    img = loadImage("hi2.jpeg");
     if (img.width > img.height) {
         img.resize(width, 0);
     } else {

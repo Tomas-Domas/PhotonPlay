@@ -5,7 +5,7 @@ module lut_driver #(
     localparam APPLE_OFFSET_LUT_SIZE = 1024,
 	localparam BORDER_LUT_SIZE = 8,
 	localparam SQUARE_LUT_SIZE = 5,
-	localparam WIN_LUT_SIZE = 5,
+	localparam WIN_LUT_SIZE = 154,
 	localparam START_LUT_SIZE = 169,
 	localparam VELOCITY = 128,
 	localparam MAX_NUM_SEGMENTS = 32,
