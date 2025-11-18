@@ -37,6 +37,7 @@ module lut_driver #(
 	logic [$clog2(MAX_NUM_SEGMENTS)-1:0] current_segment;
 	logic [$clog2(MAX_NUM_SEGMENTS):0] current_length;
     logic go;
+	logic laser_en_s;
 
     typedef enum logic [2:0] {
 		COUNT_START,
@@ -272,10 +273,10 @@ module lut_driver #(
  	always_comb begin
         // Disable laser before the start of each draw
         if(count == '0) begin
-            laser_en = '0;
+            laser_en_s = '0;
         end
         else begin
-            laser_en = '1;
+            laser_en_s = '1;
         end 
 
  		case(state_r)
@@ -377,4 +378,13 @@ module lut_driver #(
                          .data_out2(data_out2),
                          .ready(ready)
                          );
+                         
+    delay_signal #(
+        .DELAY(2000)           // for 400 µs @ 5 MHz THIS DOES NOT WORK!!!! x(us) *5
+    ) delay_inst (
+        .clk  (clk),
+        .rst  (rst),
+        .din  (laser_en_s),
+        .dout (laser_en)
+    );
 endmodule
