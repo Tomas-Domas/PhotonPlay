@@ -159,21 +159,24 @@ module lut_driver #(
 				end
 				COUNT_WIN: begin
 					if (ready) begin
-						if(btn != 0) begin
-							count <= '0;
-							state_r <= COUNT_BORDER;
-						end else begin
-							draw_update_speed_down_count <= draw_update_speed_down_count + 1;
-							if(draw_update_speed_down_count == DRAW_UPDATE_SPEED_DOWN-1) begin
+						draw_update_speed_down_count <= draw_update_speed_down_count + 1;
+						if(draw_update_speed_down_count == DRAW_UPDATE_SPEED_DOWN-1) begin
+							draw_update_speed_down_count <= '0;
+							if(btn != 0) begin
+								count <= '0;
+								current_segment <= '0;
+								state_r <= COUNT_START;
 								draw_update_speed_down_count <= '0;
+								redraw_apple_count <= '0;
+								laser_en_s <= '1;
+							end
 
-								if(count == WIN_LUT_SIZE) begin
-									count <= '0;
-									state_r <= COUNT_WIN;
-								end
-								else begin
-									count <= count + 1;
-								end
+							if(count == WIN_LUT_SIZE) begin
+								count <= '0;
+								state_r <= COUNT_WIN;
+							end
+							else begin
+								count <= count + 1;
 							end
 						end
 					end
@@ -276,6 +279,10 @@ module lut_driver #(
 					(next_pos_y[11:0] + SQUARE_Y_BOX >= outappleyoffset)) begin 
 					apple_count <= apple_count + 1;
 					current_length  <= current_length + 3;
+				end
+
+				if(current_length >= MAX_NUM_SEGMENTS) begin
+					reset_pos_vel();
 				end
 			end
         end
@@ -384,7 +391,7 @@ module lut_driver #(
                          );
                          
     signal_delay #(
-        .DELAY(2000)           // for 400 µs @ 5 MHz THIS DOES NOT WORK!!!! x(us) *5
+        .DELAY(1100)           // for 400 µs @ 5 MHz THIS DOES NOT WORK!!!! x(us) *5
     ) delay_inst (
         .clk  (clk),
         .rst  (rst),
