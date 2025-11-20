@@ -36,8 +36,8 @@ module lut_driver #(
     logic [$clog2(MAX_LUT_SIZE)-1:0] count;
 	logic [$clog2(MAX_NUM_SEGMENTS)-1:0] current_segment;
 	logic [$clog2(MAX_NUM_SEGMENTS):0] current_length;
-    logic go;
 	logic laser_en_s;
+    logic go;
 
     typedef enum logic [2:0] {
 		COUNT_START,
@@ -64,6 +64,7 @@ module lut_driver #(
             state_r <= COUNT_START;
 			draw_update_speed_down_count <= '0;
 			redraw_apple_count <= '0;
+			laser_en_s <= '1;
         end
         else begin
             case(state_r)
@@ -76,7 +77,6 @@ module lut_driver #(
 							draw_update_speed_down_count <= draw_update_speed_down_count + 1;
 							if(draw_update_speed_down_count == DRAW_UPDATE_SPEED_DOWN-1) begin
 								draw_update_speed_down_count <= '0;
-
 								if(count == START_LUT_SIZE) begin
 									state_r <= COUNT_START;
 									count <= '0;
@@ -93,10 +93,12 @@ module lut_driver #(
 						draw_update_speed_down_count <= draw_update_speed_down_count + 1;
 						if(draw_update_speed_down_count == DRAW_UPDATE_SPEED_DOWN-1) begin
 							draw_update_speed_down_count <= '0;
+							laser_en_s <= '1;
 
 							if(count == BORDER_LUT_SIZE-1) begin
 								count <= '0;
 								state_r <= COUNT_SEGMENTS;
+								laser_en_s <= '0;
 							end
 							else begin
 								count <= count + 1;
@@ -109,12 +111,14 @@ module lut_driver #(
 						draw_update_speed_down_count <= draw_update_speed_down_count + 1;
 						if(draw_update_speed_down_count == DRAW_SEGMENTS_UPDATE_SPEED_DOWN-1) begin
 							draw_update_speed_down_count <= '0;
+							laser_en_s <= '1;
 
 							if(count == SQUARE_LUT_SIZE-1) begin
 								count <= '0;
 								if(current_segment == MAX_NUM_SEGMENTS-1) begin
 									current_segment <= '0;
 									state_r <= COUNT_APPLE;
+									laser_en_s <= '0;
 								end
 								else current_segment <= current_segment + 1;
 							end
@@ -129,13 +133,21 @@ module lut_driver #(
 						draw_update_speed_down_count <= draw_update_speed_down_count + 1;
 						if(draw_update_speed_down_count == DRAW_UPDATE_SPEED_DOWN-1) begin
 							draw_update_speed_down_count <= '0;
+							laser_en_s <= '1;
 
 							if(count == SQUARE_LUT_SIZE-1) begin
 								count <= '0;
 								if(redraw_apple_count == REDRAW_APPLE-1) begin
 									redraw_apple_count <= '0;
-									if(current_length >= MAX_NUM_SEGMENTS) state_r <= COUNT_WIN;
-									else state_r <= COUNT_BORDER;
+									if(current_length >= MAX_NUM_SEGMENTS) begin 
+										state_r <= COUNT_WIN;
+										laser_en_s <= '1;
+									end
+									else begin
+										state_r <= COUNT_BORDER;
+										laser_en_s <= '0;
+									end
+
 								end
 								else redraw_apple_count <= redraw_apple_count + 1;
 							end
@@ -271,14 +283,6 @@ module lut_driver #(
 
  	//mux outputs to chose which rom will be drawn
  	always_comb begin
-        // Disable laser before the start of each draw
-        if(count == '0) begin
-            laser_en_s = '0;
-        end
-        else begin
-            laser_en_s = '1;
-        end 
-
  		case(state_r)
 			COUNT_START: begin
  				data_in1 = outstartx;
@@ -379,7 +383,7 @@ module lut_driver #(
                          .ready(ready)
                          );
                          
-    delay_signal #(
+    signal_delay #(
         .DELAY(2000)           // for 400 µs @ 5 MHz THIS DOES NOT WORK!!!! x(us) *5
     ) delay_inst (
         .clk  (clk),
